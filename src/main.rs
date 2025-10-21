@@ -79,6 +79,9 @@ fn main() {
                                 println!("SLASH / null")
                             }
                         },
+                        ' ' => (),
+                        '\t' => (),
+                        '\n' => (),
                         other_char => {
                             eprintln!("[line 1] Error: Unexpected character: {}", other_char);
                             found_lexical_error = true;
