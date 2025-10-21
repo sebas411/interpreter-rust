@@ -25,9 +25,14 @@ fn main() {
             if !file_contents.is_empty() {
                 for (line_num, line) in file_contents.split('\n').enumerate() {
                     let mut skip = false;
+                    let mut skip_string = 0;
                     for (i, c) in line.chars().enumerate() {
                         if skip {
                             skip = false;
+                            continue;
+                        }
+                        if skip_string > 0 {
+                            skip_string -= 1;
                             continue;
                         }
                         match c {
@@ -82,6 +87,16 @@ fn main() {
                             },
                             ' ' => (),
                             '\t' => (),
+                            '"' => {
+                                let literal = line.chars().skip(i+1).take_while(|c| *c != '"').collect::<String>();
+                                skip_string = literal.len() + 1;
+                                if i + skip_string >= line.len() {
+                                    eprintln!("[line {}] Error: Unterminated string.", line_num + 1);
+                                    found_lexical_error = true;
+                                } else {
+                                    println!("STRING \"{}\" {}", literal, literal);
+                                }
+                            },
                             other_char => {
                                 eprintln!("[line {}] Error: Unexpected character: {}", line_num + 1, other_char);
                                 found_lexical_error = true;
