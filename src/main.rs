@@ -56,6 +56,22 @@ fn main() {
                                 println!("BANG ! null")
                             }
                         },
+                        '<' => {
+                            if i + 1 < file_contents.len() && file_contents.chars().nth(i+1).unwrap() == '=' {
+                                println!("LESS_EQUAL <= null");
+                                skip = true;
+                            } else {
+                                println!("LESS < null")
+                            }
+                        },
+                        '>' => {
+                            if i + 1 < file_contents.len() && file_contents.chars().nth(i+1).unwrap() == '=' {
+                                println!("GREATER_EQUAL >= null");
+                                skip = true;
+                            } else {
+                                println!("GREATER > null")
+                            }
+                        },
                         other_char => {
                             eprintln!("[line 1] Error: Unexpected character: {}", other_char);
                             found_lexical_error = true;
