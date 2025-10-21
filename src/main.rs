@@ -32,7 +32,7 @@ fn main() {
                         '+' => println!("PLUS + null"),
                         ';' => println!("SEMICOLON ; null"),
                         '*' => println!("STAR * null"),
-                        _ => (),
+                        other_char => eprintln!("[line 1] Error: Unexpected character: {}", other_char),
                     }
                 }
                 println!("EOF  null");
