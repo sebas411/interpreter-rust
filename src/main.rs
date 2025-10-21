@@ -23,69 +23,70 @@ fn main() {
             });
 
             if !file_contents.is_empty() {
-                let mut skip = false;
-                for (i, c) in file_contents.chars().enumerate() {
-                    if skip {
-                        skip = false;
-                        continue;
-                    }
-                    match c {
-                        '(' => println!("LEFT_PAREN ( null"),
-                        ')' => println!("RIGHT_PAREN ) null"),
-                        '{' => println!("LEFT_BRACE {{ null"),
-                        '}' => println!("RIGHT_BRACE }} null"),
-                        ',' => println!("COMMA , null"),
-                        '.' => println!("DOT . null"),
-                        '-' => println!("MINUS - null"),
-                        '+' => println!("PLUS + null"),
-                        ';' => println!("SEMICOLON ; null"),
-                        '*' => println!("STAR * null"),
-                        '=' => {
-                            if i + 1 < file_contents.len() && file_contents.chars().nth(i+1).unwrap() == '=' {
-                                println!("EQUAL_EQUAL == null");
-                                skip = true;
-                            } else {
-                                println!("EQUAL = null")
-                            }
-                        },
-                        '!' => {
-                            if i + 1 < file_contents.len() && file_contents.chars().nth(i+1).unwrap() == '=' {
-                                println!("BANG_EQUAL != null");
-                                skip = true;
-                            } else {
-                                println!("BANG ! null")
-                            }
-                        },
-                        '<' => {
-                            if i + 1 < file_contents.len() && file_contents.chars().nth(i+1).unwrap() == '=' {
-                                println!("LESS_EQUAL <= null");
-                                skip = true;
-                            } else {
-                                println!("LESS < null")
-                            }
-                        },
-                        '>' => {
-                            if i + 1 < file_contents.len() && file_contents.chars().nth(i+1).unwrap() == '=' {
-                                println!("GREATER_EQUAL >= null");
-                                skip = true;
-                            } else {
-                                println!("GREATER > null")
-                            }
-                        },
-                        '/' => {
-                            if i + 1 < file_contents.len() && file_contents.chars().nth(i+1).unwrap() == '/' {
-                                break;
-                            } else {
-                                println!("SLASH / null")
-                            }
-                        },
-                        ' ' => (),
-                        '\t' => (),
-                        '\n' => (),
-                        other_char => {
-                            eprintln!("[line 1] Error: Unexpected character: {}", other_char);
-                            found_lexical_error = true;
-                        },
+                for (line_num, line) in file_contents.split('\n').enumerate() {
+                    let mut skip = false;
+                    for (i, c) in line.chars().enumerate() {
+                        if skip {
+                            skip = false;
+                            continue;
+                        }
+                        match c {
+                            '(' => println!("LEFT_PAREN ( null"),
+                            ')' => println!("RIGHT_PAREN ) null"),
+                            '{' => println!("LEFT_BRACE {{ null"),
+                            '}' => println!("RIGHT_BRACE }} null"),
+                            ',' => println!("COMMA , null"),
+                            '.' => println!("DOT . null"),
+                            '-' => println!("MINUS - null"),
+                            '+' => println!("PLUS + null"),
+                            ';' => println!("SEMICOLON ; null"),
+                            '*' => println!("STAR * null"),
+                            '=' => {
+                                if i + 1 < line.len() && line.chars().nth(i+1).unwrap() == '=' {
+                                    println!("EQUAL_EQUAL == null");
+                                    skip = true;
+                                } else {
+                                    println!("EQUAL = null")
+                                }
+                            },
+                            '!' => {
+                                if i + 1 < line.len() && line.chars().nth(i+1).unwrap() == '=' {
+                                    println!("BANG_EQUAL != null");
+                                    skip = true;
+                                } else {
+                                    println!("BANG ! null")
+                                }
+                            },
+                            '<' => {
+                                if i + 1 < line.len() && line.chars().nth(i+1).unwrap() == '=' {
+                                    println!("LESS_EQUAL <= null");
+                                    skip = true;
+                                } else {
+                                    println!("LESS < null")
+                                }
+                            },
+                            '>' => {
+                                if i + 1 < line.len() && line.chars().nth(i+1).unwrap() == '=' {
+                                    println!("GREATER_EQUAL >= null");
+                                    skip = true;
+                                } else {
+                                    println!("GREATER > null")
+                                }
+                            },
+                            '/' => {
+                                if i + 1 < line.len() && line.chars().nth(i+1).unwrap() == '/' {
+                                    break;
+                                } else {
+                                    println!("SLASH / null")
+                                }
+                            },
+                            ' ' => (),
+                            '\t' => (),
+                            other_char => {
+                                eprintln!("[line {}] Error: Unexpected character: {}", line_num + 1, other_char);
+                                found_lexical_error = true;
+                            },
+                        }
                     }
                 }
                 println!("EOF  null");
