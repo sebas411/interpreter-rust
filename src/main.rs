@@ -23,7 +23,12 @@ fn main() {
             });
 
             if !file_contents.is_empty() {
-                for c in file_contents.chars() {
+                let mut skip = false;
+                for (i, c) in file_contents.chars().enumerate() {
+                    if skip {
+                        skip = false;
+                        continue;
+                    }
                     match c {
                         '(' => println!("LEFT_PAREN ( null"),
                         ')' => println!("RIGHT_PAREN ) null"),
@@ -35,6 +40,14 @@ fn main() {
                         '+' => println!("PLUS + null"),
                         ';' => println!("SEMICOLON ; null"),
                         '*' => println!("STAR * null"),
+                        '=' => {
+                            if i + 1 < file_contents.len() && file_contents.chars().nth(i+1).unwrap() == '=' {
+                                println!("EQUAL_EQUAL == null");
+                                skip = true;
+                            } else {
+                                println!("EQUAL = null")
+                            }
+                        },
                         other_char => {
                             eprintln!("[line 1] Error: Unexpected character: {}", other_char);
                             found_lexical_error = true;
