@@ -1,6 +1,7 @@
 use std::env;
 use std::fs;
 use std::io::{self, Write};
+use std::process;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -11,6 +12,8 @@ fn main() {
 
     let command = &args[1];
     let filename = &args[2];
+
+    let mut found_lexical_error = false;
 
     match command.as_str() {
         "tokenize" => {
@@ -32,7 +35,10 @@ fn main() {
                         '+' => println!("PLUS + null"),
                         ';' => println!("SEMICOLON ; null"),
                         '*' => println!("STAR * null"),
-                        other_char => eprintln!("[line 1] Error: Unexpected character: {}", other_char),
+                        other_char => {
+                            eprintln!("[line 1] Error: Unexpected character: {}", other_char);
+                            found_lexical_error = true;
+                        },
                     }
                 }
                 println!("EOF  null");
@@ -44,5 +50,8 @@ fn main() {
             writeln!(io::stderr(), "Unknown command: {}", command).unwrap();
             return;
         }
+    }
+    if found_lexical_error {
+        process::exit(65);
     }
 }
