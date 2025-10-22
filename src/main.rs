@@ -13,6 +13,13 @@ fn is_digit(c: char) -> bool {
     false
 }
 
+fn is_identifier_char(c: char) -> bool {
+    if c == '_' || c >= 'a' && c <='z' || c >= 'A' && c <= 'Z' {
+        return true;
+    }
+    false
+}
+
 fn error(line: usize, message: &str) {
     report(line as i32, "", message);
 }
@@ -126,6 +133,13 @@ impl Scanner {
         self.add_token_literal("NUMBER", &format!("{}{}", my_num, add_decimal)); 
     }
 
+    fn identifier(&mut self) {
+        while is_identifier_char(self.peek()) || is_digit(self.peek()) {
+            self.advance();
+        }
+        self.add_token("IDENTIFIER");
+    }
+
     fn add_token(&mut self, token_type: &str) {
         self.add_token_literal(token_type, "null");
     }
@@ -181,6 +195,8 @@ impl Scanner {
             other_char => {
                 if is_digit(other_char) {
                     self.number();
+                } else if is_identifier_char(other_char) {
+                    self.identifier();
                 } else {
                     error(self.line, &format!("Unexpected character: {}", other_char));
                 }
