@@ -5,6 +5,8 @@ use std::process;
 
 static mut HAS_ERROR: bool = false;
 
+const RESERVED_WORDS: [&str; 16] = ["and", "class", "else", "false", "for", "fun", "if", "nil", "or", "print", "return", "super", "this", "true", "var", "while"];
+
 fn is_digit(c: char) -> bool {
     let ascii_c = c as u8;
     if ascii_c >= 48 && ascii_c <= 57 {
@@ -13,11 +15,15 @@ fn is_digit(c: char) -> bool {
     false
 }
 
-fn is_identifier_char(c: char) -> bool {
+fn is_alpha(c: char) -> bool {
     if c == '_' || c >= 'a' && c <='z' || c >= 'A' && c <= 'Z' {
         return true;
     }
     false
+}
+
+fn is_alphanumeric(c: char) -> bool {
+    is_alpha(c) || is_digit(c)
 }
 
 fn error(line: usize, message: &str) {
@@ -134,10 +140,17 @@ impl Scanner {
     }
 
     fn identifier(&mut self) {
-        while is_identifier_char(self.peek()) || is_digit(self.peek()) {
+        while is_alphanumeric(self.peek()) {
             self.advance();
         }
-        self.add_token("IDENTIFIER");
+        let matched_word = self.source.chars().skip(self.start).take(self.current - self.start).collect::<String>();
+        let token_type;
+        if RESERVED_WORDS.contains(&matched_word.as_str()) {
+            token_type = matched_word.to_ascii_uppercase();
+        } else {
+            token_type = String::from("IDENTIFIER");
+        }
+        self.add_token(&token_type);
     }
 
     fn add_token(&mut self, token_type: &str) {
@@ -195,7 +208,7 @@ impl Scanner {
             other_char => {
                 if is_digit(other_char) {
                     self.number();
-                } else if is_identifier_char(other_char) {
+                } else if is_alpha(other_char) {
                     self.identifier();
                 } else {
                     error(self.line, &format!("Unexpected character: {}", other_char));
