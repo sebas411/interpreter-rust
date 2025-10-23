@@ -1,0 +1,33 @@
+static mut HAS_ERROR: bool = false;
+
+pub fn is_digit(c: char) -> bool {
+    let ascii_c = c as u8;
+    if ascii_c >= 48 && ascii_c <= 57 {
+        return true;
+    }
+    false
+}
+
+pub fn is_alpha(c: char) -> bool {
+    if c == '_' || c >= 'a' && c <='z' || c >= 'A' && c <= 'Z' {
+        return true;
+    }
+    false
+}
+
+pub fn is_alphanumeric(c: char) -> bool {
+    is_alpha(c) || is_digit(c)
+}
+
+pub fn error(line: usize, message: &str) {
+    report(line as i32, "", message);
+}
+
+pub fn has_error() -> bool {
+    unsafe {HAS_ERROR}
+}
+
+fn report(line: i32, where_is: &str, message: &str) {
+    eprintln!("[line {}] Error{}: {}", line, where_is, message);
+    unsafe {HAS_ERROR = true};
+}
