@@ -3,7 +3,7 @@ use crate::modules::visitor::Visitor;
 
 #[derive(Clone, Debug)]
 pub enum Value {
-    Number(f64),
+    Number(String),
     Str(String),
     Bool(bool),
     Nil,

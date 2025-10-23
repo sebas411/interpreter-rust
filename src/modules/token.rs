@@ -2,7 +2,7 @@
 pub struct Token {
     pub token_type: String,
     lexeme: String,
-    literal: String,
+    pub literal: String,
     _line: i32
 }
 

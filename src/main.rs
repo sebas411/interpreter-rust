@@ -45,7 +45,7 @@ fn main() {
             });
             let mut scanner = Scanner::new(&file_contents);
             let tokens = scanner.scan_tokens();
-            let parser = Parser::new(tokens);
+            let mut parser = Parser::new(tokens);
             let expr = parser.parse().unwrap_or(Expr::Literal(Value::Nil));
             
             let printer = AstPrinter::new();

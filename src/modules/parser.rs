@@ -46,20 +46,26 @@ impl Parser {
         return false;
     }
 
-    fn primary(&self) -> Option<Expr> {
-        if self.check("FALSE") {
+    fn primary(&mut self) -> Option<Expr> {
+        if self.match_type(vec!["FALSE"]) {
             return Some(Expr::Literal(Value::Bool(false)));
         }
-        if self.check("TRUE") {
+        if self.match_type(vec!["TRUE"]) {
             return Some(Expr::Literal(Value::Bool(true)));
         }
-        if self.check("NIL") {
+        if self.match_type(vec!["NIL"]) {
             return Some(Expr::Literal(Value::Nil));
+        }
+        if self.match_type(vec!["NUMBER"]) {
+            return Some(Expr::Literal(Value::Number(self.previous().literal)))
+        }
+        if self.match_type(vec!["STRING"]) {
+            return Some(Expr::Literal(Value::Str(self.previous().literal)))
         }
         None
     }
 
-    pub fn parse(&self) -> Option<Expr> {
+    pub fn parse(&mut self) -> Option<Expr> {
         return self.primary();
     }
 
