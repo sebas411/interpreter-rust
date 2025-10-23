@@ -62,6 +62,10 @@ impl Parser {
         if self.match_type(vec!["STRING"]) {
             return Some(Expr::Literal(Value::Str(self.previous().literal)))
         }
+        if self.match_type(vec!["LEFT_PAREN"]) {
+            let expr = self.primary().unwrap();
+            return Some(Expr::Grouping { expression: Box::new(expr) })
+        }
         None
     }
 

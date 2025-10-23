@@ -24,26 +24,34 @@ impl fmt::Display for Value {
 pub enum Expr {
     Unary {
         operator: String,
-        expr: Box<Expr>,
+        expression: Box<Expr>,
     },
     Binary {
         left: Box<Expr>,
         operator: String,
         right: Box<Expr>,
     },
+    Grouping {
+        expression: Box<Expr>
+    },
     Literal(Value)
 }
 
 impl Expr {
-    pub fn accept(&self, visitor: &dyn Visitor) {
+    pub fn accept(&self, visitor: &dyn Visitor) -> String {
         match self {
-            Expr::Unary {operator: _, expr: _} => {
-                visitor.visit_unary(self);
+            Expr::Unary {operator: _, expression: _} => {
+                visitor.visit_unary(self)
+            },
+            Expr::Binary { left: _, operator: _, right: _ } => {
+                visitor.visit_binary(self)
             },
             Expr::Literal(_) => {
-                visitor.visit_literal(self);
+                visitor.visit_literal(self)
+            },
+            Expr::Grouping { expression: _ } => {
+                visitor.visit_grouping(self)
             }
-            _ => (),
         }
     }
 }
