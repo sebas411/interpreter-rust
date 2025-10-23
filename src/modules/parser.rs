@@ -47,7 +47,18 @@ impl Parser {
     }
 
     fn expression(&mut self) -> Option<Expr> {
-        self.comparison()
+        self.equality()
+    }
+
+    fn equality(&mut self) -> Option<Expr> {
+        let mut current_expr = self.comparison();
+        while self.match_type(vec!["BANG_EQUAL", "EQUAL_EQUAL"]) {
+            let first = current_expr.unwrap();
+            let operator = self.previous();
+            let second = self.comparison().unwrap();
+            current_expr = Some(Expr::Binary { left: Box::new(first), operator , right: Box::new(second) });
+        }
+        return current_expr;
     }
 
     fn comparison(&mut self) -> Option<Expr> {
