@@ -100,6 +100,7 @@ impl Parser {
         if self.match_type(vec!["LEFT_PAREN"]) {
             let expr = self.expression().unwrap();
             // TODO: add syntax error if it doesnt end with paren
+            self.advance();
             return Some(Expr::Grouping { expression: Box::new(expr) })
         }
         None
