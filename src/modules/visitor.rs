@@ -11,10 +11,10 @@ pub struct AstPrinter;
 
 impl Visitor for AstPrinter {
     fn visit_binary(&self, expr: &Expr) -> String {
-        if let Expr::Unary { operator, right } = expr {
-            print!("{}", operator.lexeme);
-            let expr = *right.clone();
-            expr.accept(self);
+        if let Expr::Binary { left, operator, right } = expr {
+            let right = *right.clone();
+            let left = *left.clone();
+            return self.parenthesize(&operator.lexeme, vec![&left, &right]);
         }
         "".into()
     }

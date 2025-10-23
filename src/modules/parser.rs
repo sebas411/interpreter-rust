@@ -47,7 +47,18 @@ impl Parser {
     }
 
     fn expression(&mut self) -> Option<Expr> {
-        self.unary()
+        self.factor()
+    }
+
+    fn factor(&mut self) -> Option<Expr> {
+        let mut current_expr = self.unary();
+        while self.match_type(vec!["STAR", "SLASH"]) {
+            let first = current_expr.unwrap();
+            let operator = self.previous();
+            let second = self.unary().unwrap();
+            current_expr = Some(Expr::Binary { left: Box::new(first), operator , right: Box::new(second) });
+        }
+        return current_expr;
     }
 
     fn unary(&mut self) -> Option<Expr> {
