@@ -11,18 +11,17 @@ pub struct AstPrinter;
 
 impl Visitor for AstPrinter {
     fn visit_binary(&self, expr: &Expr) -> String {
-        if let Expr::Unary { operator, expression } = expr {
-            print!("{} ", operator);
-            let expr = *expression.clone();
+        if let Expr::Unary { operator, right } = expr {
+            print!("{}", operator.lexeme);
+            let expr = *right.clone();
             expr.accept(self);
         }
         "".into()
     }
     fn visit_unary(&self, expr: &Expr) -> String {
-        if let Expr::Unary { operator, expression } = expr {
-            print!("{} ", operator);
-            let expr = *expression.clone();
-            expr.accept(self);
+        if let Expr::Unary { operator, right } = expr {
+            let expr = *right.clone();
+            return self.parenthesize(&operator.lexeme, vec![&expr])
         }
         "".into()
     }

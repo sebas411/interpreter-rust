@@ -1,5 +1,5 @@
 use std::fmt;
-use crate::modules::visitor::Visitor;
+use crate::modules::{token::Token, visitor::Visitor};
 
 #[derive(Clone, Debug)]
 pub enum Value {
@@ -23,12 +23,12 @@ impl fmt::Display for Value {
 #[derive(Clone, Debug)]
 pub enum Expr {
     Unary {
-        operator: String,
-        expression: Box<Expr>,
+        operator: Token,
+        right: Box<Expr>,
     },
     Binary {
         left: Box<Expr>,
-        operator: String,
+        operator: Token,
         right: Box<Expr>,
     },
     Grouping {
@@ -40,7 +40,7 @@ pub enum Expr {
 impl Expr {
     pub fn accept(&self, visitor: &dyn Visitor) -> String {
         match self {
-            Expr::Unary {operator: _, expression: _} => {
+            Expr::Unary {operator: _, right: _} => {
                 visitor.visit_unary(self)
             },
             Expr::Binary { left: _, operator: _, right: _ } => {

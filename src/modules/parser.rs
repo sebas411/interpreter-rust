@@ -46,6 +46,19 @@ impl Parser {
         return false;
     }
 
+    fn expression(&mut self) -> Option<Expr> {
+        self.unary()
+    }
+
+    fn unary(&mut self) -> Option<Expr> {
+        if self.match_type(vec!["BANG", "MINUS"]) {
+            let operator = self.previous();
+            let right = self.unary().unwrap();
+            return Some(Expr::Unary { operator, right: Box::new(right) })
+        }
+        self.primary()
+    }
+
     fn primary(&mut self) -> Option<Expr> {
         if self.match_type(vec!["FALSE"]) {
             return Some(Expr::Literal(Value::Bool(false)));
@@ -63,14 +76,15 @@ impl Parser {
             return Some(Expr::Literal(Value::Str(self.previous().literal)))
         }
         if self.match_type(vec!["LEFT_PAREN"]) {
-            let expr = self.primary().unwrap();
+            let expr = self.expression().unwrap();
+            // TODO: add syntax error if it doesnt end with paren
             return Some(Expr::Grouping { expression: Box::new(expr) })
         }
         None
     }
 
     pub fn parse(&mut self) -> Option<Expr> {
-        return self.primary();
+        return self.expression();
     }
 
 }
