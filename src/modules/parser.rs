@@ -47,7 +47,18 @@ impl Parser {
     }
 
     fn expression(&mut self) -> Option<Expr> {
-        self.factor()
+        self.term()
+    }
+
+    fn term(&mut self) -> Option<Expr> {
+        let mut current_expr = self.factor();
+        while self.match_type(vec!["PLUS", "MINUS"]) {
+            let first = current_expr.unwrap();
+            let operator = self.previous();
+            let second = self.factor().unwrap();
+            current_expr = Some(Expr::Binary { left: Box::new(first), operator , right: Box::new(second) });
+        }
+        return current_expr;
     }
 
     fn factor(&mut self) -> Option<Expr> {
