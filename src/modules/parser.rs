@@ -1,6 +1,6 @@
 use crate::modules::{expressions::{Expr, Value}, token::Token};
 use super::super::error_token;
-use std::fmt;
+use std::{fmt, process};
 
 #[derive(Debug, Clone)]
 struct ParseError;
@@ -136,13 +136,14 @@ impl Parser {
             self.consume("RIGHT_PAREN", "Expect ')' after expression.");
             return Expr::Grouping { expression: Box::new(expr) }
         }
-        panic!("{}", self.error(self.peek(), "Expect expression."));
+        self.error(self.peek(), "Expect expression.");
+        process::exit(65);
     }
 
     fn consume(&mut self, token_type: &str, message: &str) -> Token {
         if self.check(token_type) {return self.advance()};
-        let error = self.error(self.peek(), message);
-        panic!("{}", error);
+        self.error(self.peek(), message);
+        process::exit(65);
     }
 
     fn error(&self, token: Token, message: &str) -> ParseError {
