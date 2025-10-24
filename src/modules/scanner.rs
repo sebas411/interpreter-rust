@@ -1,5 +1,5 @@
-use lox_interpreter::{error, is_alpha, is_alphanumeric, is_digit};
 use crate::modules::token::Token;
+use super::super::{is_alpha, is_alphanumeric, is_digit, error};
 
 const RESERVED_WORDS: [&str; 16] = ["and", "class", "else", "false", "for", "fun", "if", "nil", "or", "print", "return", "super", "this", "true", "var", "while"];
 

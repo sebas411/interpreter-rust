@@ -3,7 +3,7 @@ pub struct Token {
     pub token_type: String,
     pub lexeme: String,
     pub literal: String,
-    _line: i32
+    pub line: usize
 }
 
 impl Token {
@@ -12,7 +12,7 @@ impl Token {
             token_type: token_type.into(),
             lexeme: lexeme.into(),
             literal: literal.into(),
-            _line: line as i32,
+            line: line,
 
         }
     }

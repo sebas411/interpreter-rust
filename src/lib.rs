@@ -1,3 +1,6 @@
+pub mod modules;
+use crate::modules::token::Token;
+
 static mut HAS_ERROR: bool = false;
 
 pub fn is_digit(c: char) -> bool {
@@ -20,14 +23,22 @@ pub fn is_alphanumeric(c: char) -> bool {
 }
 
 pub fn error(line: usize, message: &str) {
-    report(line as i32, "", message);
+    report(line, "", message);
+}
+
+pub fn error_token(token: Token, message: &str) {
+    if token.token_type == "EOF" {
+        report(token.line, " at end", message);
+    } else {
+        report(token.line, &format!(" at '{}'", token.lexeme), message);
+    }
 }
 
 pub fn has_error() -> bool {
     unsafe {HAS_ERROR}
 }
 
-fn report(line: i32, where_is: &str, message: &str) {
+fn report(line: usize, where_is: &str, message: &str) {
     eprintln!("[line {}] Error{}: {}", line, where_is, message);
     unsafe {HAS_ERROR = true};
 }

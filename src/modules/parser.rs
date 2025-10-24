@@ -1,4 +1,15 @@
 use crate::modules::{expressions::{Expr, Value}, token::Token};
+use super::super::error_token;
+use std::fmt;
+
+#[derive(Debug, Clone)]
+struct ParseError;
+
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Error parsing.")
+    }
+}
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -46,89 +57,100 @@ impl Parser {
         return false;
     }
 
-    fn expression(&mut self) -> Option<Expr> {
+    fn expression(&mut self) -> Expr {
         self.equality()
     }
 
-    fn equality(&mut self) -> Option<Expr> {
+    fn equality(&mut self) -> Expr {
         let mut current_expr = self.comparison();
         while self.match_type(vec!["BANG_EQUAL", "EQUAL_EQUAL"]) {
-            let first = current_expr.unwrap();
+            let first = current_expr;
             let operator = self.previous();
-            let second = self.comparison().unwrap();
-            current_expr = Some(Expr::Binary { left: Box::new(first), operator , right: Box::new(second) });
+            let second = self.comparison();
+            current_expr = Expr::Binary { left: Box::new(first), operator , right: Box::new(second) };
         }
         return current_expr;
     }
 
-    fn comparison(&mut self) -> Option<Expr> {
+    fn comparison(&mut self) -> Expr {
         let mut current_expr = self.term();
         while self.match_type(vec!["GREATER", "GREATER_EQUAL", "LESS", "LESS_EQUAL"]) {
-            let first = current_expr.unwrap();
+            let first = current_expr;
             let operator = self.previous();
-            let second = self.term().unwrap();
-            current_expr = Some(Expr::Binary { left: Box::new(first), operator , right: Box::new(second) });
+            let second = self.term();
+            current_expr = Expr::Binary { left: Box::new(first), operator , right: Box::new(second) };
         }
         return current_expr;
     }
 
-    fn term(&mut self) -> Option<Expr> {
+    fn term(&mut self) -> Expr {
         let mut current_expr = self.factor();
         while self.match_type(vec!["PLUS", "MINUS"]) {
-            let first = current_expr.unwrap();
+            let first = current_expr;
             let operator = self.previous();
-            let second = self.factor().unwrap();
-            current_expr = Some(Expr::Binary { left: Box::new(first), operator , right: Box::new(second) });
+            let second = self.factor();
+            current_expr = Expr::Binary { left: Box::new(first), operator , right: Box::new(second) };
         }
         return current_expr;
     }
 
-    fn factor(&mut self) -> Option<Expr> {
+    fn factor(&mut self) -> Expr {
         let mut current_expr = self.unary();
         while self.match_type(vec!["STAR", "SLASH"]) {
-            let first = current_expr.unwrap();
+            let first = current_expr;
             let operator = self.previous();
-            let second = self.unary().unwrap();
-            current_expr = Some(Expr::Binary { left: Box::new(first), operator , right: Box::new(second) });
+            let second = self.unary();
+            current_expr = Expr::Binary { left: Box::new(first), operator , right: Box::new(second) };
         }
         return current_expr;
     }
 
-    fn unary(&mut self) -> Option<Expr> {
+    fn unary(&mut self) -> Expr {
         if self.match_type(vec!["BANG", "MINUS"]) {
             let operator = self.previous();
-            let right = self.unary().unwrap();
-            return Some(Expr::Unary { operator, right: Box::new(right) })
+            let right = self.unary();
+            return Expr::Unary { operator, right: Box::new(right) }
         }
         self.primary()
     }
 
-    fn primary(&mut self) -> Option<Expr> {
+    fn primary(&mut self) -> Expr {
         if self.match_type(vec!["FALSE"]) {
-            return Some(Expr::Literal(Value::Bool(false)));
+            return Expr::Literal(Value::Bool(false));
         }
         if self.match_type(vec!["TRUE"]) {
-            return Some(Expr::Literal(Value::Bool(true)));
+            return Expr::Literal(Value::Bool(true));
         }
         if self.match_type(vec!["NIL"]) {
-            return Some(Expr::Literal(Value::Nil));
+            return Expr::Literal(Value::Nil);
         }
         if self.match_type(vec!["NUMBER"]) {
-            return Some(Expr::Literal(Value::Number(self.previous().literal)))
+            return Expr::Literal(Value::Number(self.previous().literal))
         }
         if self.match_type(vec!["STRING"]) {
-            return Some(Expr::Literal(Value::Str(self.previous().literal)))
+            return Expr::Literal(Value::Str(self.previous().literal))
         }
         if self.match_type(vec!["LEFT_PAREN"]) {
-            let expr = self.expression().unwrap();
+            let expr = self.expression();
             // TODO: add syntax error if it doesnt end with paren
-            self.advance();
-            return Some(Expr::Grouping { expression: Box::new(expr) })
+            self.consume("RIGHT_PAREN", "Expect ')' after expression.");
+            return Expr::Grouping { expression: Box::new(expr) }
         }
-        None
+        panic!("{}", self.error(self.peek(), "Expect expression."));
     }
 
-    pub fn parse(&mut self) -> Option<Expr> {
+    fn consume(&mut self, token_type: &str, message: &str) -> Token {
+        if self.check(token_type) {return self.advance()};
+        let error = self.error(self.peek(), message);
+        panic!("{}", error);
+    }
+
+    fn error(&self, token: Token, message: &str) -> ParseError {
+        error_token(token, message);
+        ParseError
+    }
+
+    pub fn parse(&mut self) -> Expr {
         return self.expression();
     }
 
