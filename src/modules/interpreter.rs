@@ -6,7 +6,10 @@ impl Visitor for Interpreter {
     fn visit_binary(&self, _expr: &Expr) -> Value {
         Value::Nil
     }
-    fn visit_grouping(&self, _expr: &Expr) -> Value {
+    fn visit_grouping(&self, expr: &Expr) -> Value {
+        if let Expr::Grouping { expression } = expr {
+            return expression.accept(self);
+        }
         Value::Nil
     }
     fn visit_literal(&self, expr: &Expr) -> Value {
