@@ -38,7 +38,7 @@ pub enum Expr {
 }
 
 impl Expr {
-    pub fn accept(&self, visitor: &dyn Visitor) -> String {
+    pub fn accept(&self, visitor: &dyn Visitor) -> Value {
         match self {
             Expr::Unary {operator: _, right: _} => {
                 visitor.visit_unary(self)

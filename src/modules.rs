@@ -3,3 +3,4 @@ pub mod token;
 pub mod parser;
 pub mod expressions;
 pub mod visitor;
+pub mod interpreter;
