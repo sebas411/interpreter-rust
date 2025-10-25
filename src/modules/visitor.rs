@@ -1,4 +1,4 @@
-use crate::modules::expressions::{Expr, Value};
+use crate::modules::{expressions::Expr, value::Value};
 
 pub trait Visitor {
     fn visit_binary(&self, expr: &Expr) -> Value;

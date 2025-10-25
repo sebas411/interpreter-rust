@@ -1,4 +1,4 @@
-use crate::modules::{expressions::{Expr, Value}, visitor::Visitor};
+use crate::modules::{expressions::Expr, value::Value, visitor::Visitor};
 
 pub struct Interpreter;
 
@@ -7,14 +7,28 @@ impl Visitor for Interpreter {
         if let Expr::Binary { left, operator, right } = expr {
             let left = self.evaluate(left);
             let right = self.evaluate(right);
-            if let (Value::Number(_, n_left), Value::Number(_, n_right)) = (left, right) {
+            if let (Value::Num(n_left), Value::Num(n_right)) = (&left, &right) {
                 match operator.token_type.as_str() {
-                    "PLUS" => return Value::from_number(n_left + n_right),
-                    "MINUS" => return Value::from_number(n_left - n_right),
-                    "STAR" => return Value::from_number(n_left * n_right),
-                    "SLASH" => return Value::from_number(n_left / n_right),
+                    "PLUS" => return Value::Num(n_left + n_right),
+                    "MINUS" => return Value::Num(n_left - n_right),
+                    "STAR" => return Value::Num(n_left * n_right),
+                    "SLASH" => return Value::Num(n_left / n_right),
+                    "GREATER" => return Value::Bool(n_left > n_right),
+                    "GREATER_EQUAL" => return Value::Bool(n_left >= n_right),
+                    "LESS" => return Value::Bool(n_left < n_right),
+                    "LESS_EQUAL" => return Value::Bool(n_left <= n_right),
                     _ => ()
                 }
+            } else if let (Value::Str(s_left), Value::Str(s_right)) = (&left, &right) {
+                if operator.token_type == "PLUS" {
+                    return Value::Str(format!("{}{}", s_left, s_right));
+                }
+            }
+
+            match operator.token_type.as_str() {
+                "BANG_EQUAL" => return Value::Bool(!self.is_equal(left, right)),
+                "EQUAL_EQUAL" => return Value::Bool(self.is_equal(left, right)),
+                _ => (),
             }
         }
         Value::Nil
@@ -36,8 +50,8 @@ impl Visitor for Interpreter {
             let right = self.evaluate(&right);
             match operator.token_type.as_str() {
                 "MINUS" => {
-                    if let Value::Number(_, n) = right {
-                        return Value::from_number(-n)
+                    if let Value::Num(n) = right {
+                        return Value::Num(-n)
                     } else {
                         return Value::Nil
                     }
@@ -57,8 +71,8 @@ impl Interpreter {
 
     pub fn interpret(&self, expr: &Expr) {
         let val = self.evaluate(expr);
-        if let Value::Number(_, n) = val {
-            println!("{}", n);
+        if let Value::Num(n) = val {
+            println!("{}", n.value());
         } else {
             println!("{}", val);
         }
@@ -74,5 +88,9 @@ impl Interpreter {
             Value::Nil => false,
             _ => true,
         }
+    }
+
+    fn is_equal(&self, a: Value, b: Value) -> bool {
+        a == b
     }
 }

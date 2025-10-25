@@ -1,4 +1,4 @@
-use crate::modules::{expressions::{Expr, Value}, token::Token};
+use crate::modules::{expressions::Expr, token::Token, value::Value};
 use super::super::error_token;
 use std::fmt;
 
@@ -143,7 +143,7 @@ impl Parser {
             return Ok(Expr::Literal(Value::Nil));
         }
         if self.match_type(vec!["NUMBER"]) {
-            return Ok(Expr::Literal(Value::Number(self.previous().literal, self.previous().literal.parse().unwrap())))
+            return Ok(Expr::Literal(Value::from_number_and_literal(self.previous().literal.parse().unwrap(), &self.previous().literal)))
         }
         if self.match_type(vec!["STRING"]) {
             return Ok(Expr::Literal(Value::Str(self.previous().literal)))
