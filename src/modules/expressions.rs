@@ -9,6 +9,19 @@ pub enum Value {
     Nil,
 }
 
+impl Value {
+    pub fn from_number(num: f64) -> Self {
+        let add_decimal;
+        if num == (num as i64) as f64 {
+            add_decimal = ".0";
+        } else {
+            add_decimal = "";
+        }
+        let num_str_rep = format!("{}{}", num, add_decimal);
+        Self::Number(num_str_rep, num)
+    }
+}
+
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

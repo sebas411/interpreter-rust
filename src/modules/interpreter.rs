@@ -8,7 +8,7 @@ impl Visitor for Interpreter {
     }
     fn visit_grouping(&self, expr: &Expr) -> Value {
         if let Expr::Grouping { expression } = expr {
-            return expression.accept(self);
+            return self.evaluate(expression);
         }
         Value::Nil
     }
@@ -18,7 +18,21 @@ impl Visitor for Interpreter {
         }
         Value::Nil
     }
-    fn visit_unary(&self, _expr: &Expr) -> Value {
+    fn visit_unary(&self, expr: &Expr) -> Value {
+        if let Expr::Unary { operator, right } = expr {
+            let right = self.evaluate(&right);
+            match operator.token_type.as_str() {
+                "MINUS" => {
+                    if let Value::Number(_, n) = right {
+                        return Value::from_number(-n)
+                    } else {
+                        return Value::Nil
+                    }
+                },
+                "BANG" => return Value::Bool(!self.is_truthy(right)),
+                _ => ()
+            }
+        }
         Value::Nil
     }
 }
@@ -29,11 +43,23 @@ impl Interpreter {
     }
 
     pub fn interpret(&self, expr: &Expr) {
-        let val = expr.accept(self);
+        let val = self.evaluate(expr);
         if let Value::Number(_, n) = val {
             println!("{}", n);
         } else {
             println!("{}", val);
+        }
+    }
+
+    fn evaluate(&self, expr: &Expr) -> Value {
+        expr.accept(self)
+    }
+
+    fn is_truthy(&self, object: Value) -> bool {
+        match object {
+            Value::Bool(val) => val,
+            Value::Nil => false,
+            _ => true,
         }
     }
 }
