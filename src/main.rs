@@ -7,12 +7,14 @@ use lox_interpreter::modules::scanner::Scanner;
 use lox_interpreter::modules::parser::Parser;
 use lox_interpreter::modules::visitor::AstPrinter;
 
-fn run(source: &str) {
+fn _run(source: &str) {
     let mut scanner = Scanner::new(source);
     let tokens = scanner.scan_tokens();
 
-    for token in tokens {
-        println!("{}", token.to_string());
+    let mut parser = Parser::new(tokens);
+    if let Some(expr) = parser.parse() {
+        let printer = AstPrinter::new();
+        printer.print_tree(&expr);
     }
 }
 
@@ -33,7 +35,12 @@ fn main() {
                 String::new()
             });
 
-            run(&file_contents);
+            let mut scanner = Scanner::new(&file_contents);
+            let tokens = scanner.scan_tokens();
+
+            for token in tokens {
+                println!("{}", token.to_string());
+            }
         },
         "parse" => {
             let file_contents = fs::read_to_string(filename).unwrap_or_else(|_| {
@@ -43,10 +50,11 @@ fn main() {
             let mut scanner = Scanner::new(&file_contents);
             let tokens = scanner.scan_tokens();
             let mut parser = Parser::new(tokens);
-            let expr = parser.parse();
+            if let Some(expr) = parser.parse() {
+                let printer = AstPrinter::new();
+                printer.print_tree(&expr);
+            }
             
-            let printer = AstPrinter::new();
-            printer.print_tree(&expr);
         },
         other => {
             writeln!(io::stderr(), "my: {}", other).unwrap();
