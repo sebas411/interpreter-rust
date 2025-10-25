@@ -143,7 +143,7 @@ impl Parser {
             return Ok(Expr::Literal(Value::Nil));
         }
         if self.match_type(vec!["NUMBER"]) {
-            return Ok(Expr::Literal(Value::Number(self.previous().literal)))
+            return Ok(Expr::Literal(Value::Number(self.previous().literal, self.previous().literal.parse().unwrap())))
         }
         if self.match_type(vec!["STRING"]) {
             return Ok(Expr::Literal(Value::Str(self.previous().literal)))

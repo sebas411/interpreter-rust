@@ -3,7 +3,7 @@ use crate::modules::{token::Token, visitor::Visitor};
 
 #[derive(Clone, Debug)]
 pub enum Value {
-    Number(String),
+    Number(String, f64),
     Str(String),
     Bool(bool),
     Nil,
@@ -12,7 +12,7 @@ pub enum Value {
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Value::Number(n) => write!(f, "{}", n),
+            Value::Number(s, _) => write!(f, "{}", s),
             Value::Str(s)    => write!(f, "{}", s),
             Value::Bool(b)   => write!(f, "{}", b),
             Value::Nil       => write!(f, "nil"),
