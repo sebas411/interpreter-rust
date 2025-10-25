@@ -3,7 +3,20 @@ use crate::modules::{expressions::{Expr, Value}, visitor::Visitor};
 pub struct Interpreter;
 
 impl Visitor for Interpreter {
-    fn visit_binary(&self, _expr: &Expr) -> Value {
+    fn visit_binary(&self, expr: &Expr) -> Value {
+        if let Expr::Binary { left, operator, right } = expr {
+            let left = self.evaluate(left);
+            let right = self.evaluate(right);
+            if let (Value::Number(_, n_left), Value::Number(_, n_right)) = (left, right) {
+                match operator.token_type.as_str() {
+                    "PLUS" => return Value::from_number(n_left + n_right),
+                    "MINUS" => return Value::from_number(n_left - n_right),
+                    "STAR" => return Value::from_number(n_left * n_right),
+                    "SLASH" => return Value::from_number(n_left / n_right),
+                    _ => ()
+                }
+            }
+        }
         Value::Nil
     }
     fn visit_grouping(&self, expr: &Expr) -> Value {
