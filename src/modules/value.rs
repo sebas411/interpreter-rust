@@ -110,6 +110,14 @@ impl Value {
     pub fn from_number_and_literal(num: f64, literal: &str) -> Self {
         Self::Num(Number(literal.into(), num))
     }
+    pub fn is_number(&self) -> bool {
+        if let Value::Num(_) = self {true}
+        else {false}
+    }
+    pub fn is_string(&self) -> bool {
+        if let Value::Str(_) = self {true}
+        else {false}
+    }
 }
 
 impl fmt::Display for Value {

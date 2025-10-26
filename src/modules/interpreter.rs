@@ -9,6 +9,18 @@ impl Visitor for Interpreter {
         if let Expr::Binary { left, operator, right } = expr {
             let left = self.evaluate(left)?;
             let right = self.evaluate(right)?;
+
+            match operator.token_type.as_str() {
+                "BANG_EQUAL" => return Ok(Value::Bool(!self.is_equal(left, right))),
+                "EQUAL_EQUAL" => return Ok(Value::Bool(self.is_equal(left, right))),
+                "PLUS" => {
+                    if !(left.is_number() && right.is_number() || left.is_string() && right.is_string()) {
+                        return Err(Box::new(RuntimeError::new(Some(operator.clone()), "Operands must be two numbers or two strings.")))
+                    }
+                }
+                _ => (),
+            }
+
             if let (Value::Num(n_left), Value::Num(n_right)) = (&left, &right) {
                 match operator.token_type.as_str() {
                     "PLUS" => return Ok(Value::Num(n_left + n_right)),
@@ -26,12 +38,7 @@ impl Visitor for Interpreter {
                     return Ok(Value::Str(format!("{}{}", s_left, s_right)));
                 }
             }
-
-            match operator.token_type.as_str() {
-                "BANG_EQUAL" => return Ok(Value::Bool(!self.is_equal(left, right))),
-                "EQUAL_EQUAL" => return Ok(Value::Bool(self.is_equal(left, right))),
-                _ => (),
-            }
+            return Err(Box::new(RuntimeError::new(Some(operator.clone()), "Operands must be numbers.")))
         }
         Err(Box::new(RuntimeError::new(None, "Unknown runtime error")))
     }
