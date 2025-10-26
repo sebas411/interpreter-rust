@@ -1,10 +1,10 @@
-use crate::{modules::{errors::{LoxError, RuntimeError}, expressions::Expr, value::Value, visitor::Visitor}, runtime_error};
+use crate::{modules::{errors::{LoxError, RuntimeError}, expressions::Expr, statements::Stmt, value::Value, visitor::{ExprVisitor, StmtVisitor}}, runtime_error};
 
 type Result<T> = std::result::Result<T, Box<dyn LoxError>>;
 
 pub struct Interpreter;
 
-impl Visitor for Interpreter {
+impl ExprVisitor for Interpreter {
     fn visit_binary(&self, expr: &Expr) -> Result<Value> {
         if let Expr::Binary { left, operator, right } = expr {
             let left = self.evaluate(left)?;
@@ -74,12 +74,39 @@ impl Visitor for Interpreter {
     }
 }
 
+impl StmtVisitor for Interpreter {
+    fn visit_print(&self, stmt: &Stmt) -> Result<()> {
+        if let Stmt::Print(expr) = stmt {
+            let val = self.evaluate(expr)?;
+            if let Value::Num(n) = val {
+                println!("{}", n.value());
+            } else {
+                println!("{}", val);
+            }
+        }
+        Ok(())
+    }
+}
+
 impl Interpreter {
     pub fn new() -> Self {
         Self
     }
 
-    pub fn interpret(&self, expr: &Expr) {
+    pub fn interpret(&self, statements: Vec<Stmt>) {
+        for statement in statements {
+            let res = self.execute(statement);
+            if res.is_err() {
+                break;
+            }
+        }
+    }
+
+    fn execute(&self, stmt: Stmt) -> Result<()> {
+        stmt.accept(self)
+    }
+
+    pub fn evaluate_expression(&self, expr: &Expr) {
         let val = self.evaluate(expr);
         if let Err(e) = val {
             runtime_error(e);

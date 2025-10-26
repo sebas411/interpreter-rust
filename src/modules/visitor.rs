@@ -1,17 +1,21 @@
-use crate::modules::{errors::{LoxError, PrintError}, expressions::Expr, value::Value};
+use crate::modules::{errors::{LoxError, PrintError}, expressions::Expr, statements::Stmt, value::Value};
 
 type Result<T> = std::result::Result<T, Box<dyn LoxError>>;
 
-pub trait Visitor {
+pub trait ExprVisitor {
     fn visit_binary(&self, expr: &Expr) -> Result<Value>;
     fn visit_unary(&self, expr: &Expr) -> Result<Value>;
     fn visit_literal(&self, expr: &Expr) -> Result<Value>;
     fn visit_grouping(&self, expr: &Expr) -> Result<Value>;
 }
 
+pub trait StmtVisitor {
+    fn visit_print(&self, stmt: &Stmt) -> Result<()>;
+}
+
 pub struct AstPrinter;
 
-impl Visitor for AstPrinter {
+impl ExprVisitor for AstPrinter {
     fn visit_binary(&self, expr: &Expr) -> Result<Value> {
         if let Expr::Binary { left, operator, right } = expr {
             let right = *right.clone();

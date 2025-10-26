@@ -1,4 +1,4 @@
-use crate::modules::{errors::ParseError, expressions::Expr, token::Token, value::Value};
+use crate::modules::{errors::ParseError, expressions::Expr, statements::Stmt, token::Token, value::Value};
 use super::super::error_token;
 
 type Result<T> = std::result::Result<T, ParseError>;
@@ -146,6 +146,17 @@ impl Parser {
         Err(self.error(self.peek(), "Expect expression."))
     }
 
+    fn statement(&mut self) -> Result<Stmt> {
+        self.match_type(vec!["PRINT"]);
+        self.print_statement()
+    }
+
+    fn print_statement(&mut self) -> Result<Stmt> {
+        let value = self.expression()?;
+        self.consume("SEMICOLON", "Expect ';' after expression.")?;
+        Ok(Stmt::Print(value))
+    }
+
     fn consume(&mut self, token_type: &str, message: &str) -> Result<Token> {
         if self.check(token_type) {return Ok(self.advance())};
         Err(self.error(self.peek(), message))
@@ -156,11 +167,19 @@ impl Parser {
         ParseError
     }
 
-    pub fn parse(&mut self) -> Option<Expr> {
+    pub fn parse_expr(&mut self) -> Option<Expr> {
         match self.expression() {
             Ok(expr) => Some(expr),
             Err(_) => None
         }
+    }
+
+    pub fn parse(&mut self) -> Result<Vec<Stmt>> {
+        let mut statements = vec![];
+        while !self.is_at_end() {
+            statements.push(self.statement()?);
+        }
+        Ok(statements)
     }
 
 }
