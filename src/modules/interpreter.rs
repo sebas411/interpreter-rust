@@ -1,8 +1,10 @@
-use crate::{modules::{errors::{LoxError, RuntimeError}, expressions::Expr, statements::Stmt, value::Value, visitor::{ExprVisitor, StmtVisitor}}, runtime_error};
+use crate::{modules::{environment::Environment, errors::{LoxError, RuntimeError}, expressions::Expr, statements::Stmt, value::Value, visitor::{ExprVisitor, StmtVisitor}}, runtime_error};
 
 type Result<T> = std::result::Result<T, Box<dyn LoxError>>;
 
-pub struct Interpreter;
+pub struct Interpreter {
+    environment: Environment
+}
 
 impl ExprVisitor for Interpreter {
     fn visit_binary(&self, expr: &Expr) -> Result<Value> {
@@ -72,6 +74,12 @@ impl ExprVisitor for Interpreter {
         }
         Err(Box::new(RuntimeError::new(None, "Unknown runtime error")))
     }
+    fn visit_variable(&self, expr: &Expr) -> Result<Value> {
+        if let Expr::Variable(name) = expr {
+            return self.environment.get(name);
+        }
+        Err(Box::new(RuntimeError::new(None, "Unknown runtime error")))
+    }
 }
 
 impl StmtVisitor for Interpreter {
@@ -92,14 +100,25 @@ impl StmtVisitor for Interpreter {
         }
         Ok(())
     }
+    fn visit_var_stmt(&mut self, stmt: &Stmt) -> Result<()> {
+        if let Stmt::Var { name, initializer } = stmt {
+            let mut value = Value::Nil;
+            if let Some(init) = initializer {
+                value = self.evaluate(init)?;
+            }
+
+            self.environment.define(&name.lexeme, value);
+        }
+        Ok(())
+    }
 }
 
 impl Interpreter {
     pub fn new() -> Self {
-        Self
+        Self {environment: Environment::new()}
     }
 
-    pub fn interpret(&self, statements: Vec<Stmt>) {
+    pub fn interpret(&mut self, statements: Vec<Stmt>) {
         for statement in statements {
             let res = self.execute(statement);
             if let Err(e) = res {
@@ -109,7 +128,7 @@ impl Interpreter {
         }
     }
 
-    fn execute(&self, stmt: Stmt) -> Result<()> {
+    fn execute(&mut self, stmt: Stmt) -> Result<()> {
         stmt.accept(self)
     }
 

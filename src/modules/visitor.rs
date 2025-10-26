@@ -7,11 +7,13 @@ pub trait ExprVisitor {
     fn visit_unary(&self, expr: &Expr) -> Result<Value>;
     fn visit_literal(&self, expr: &Expr) -> Result<Value>;
     fn visit_grouping(&self, expr: &Expr) -> Result<Value>;
+    fn visit_variable(&self, expr: &Expr) -> Result<Value>;
 }
 
 pub trait StmtVisitor {
     fn visit_expression_stmt(&self, stmt: &Stmt) -> Result<()>;
     fn visit_print(&self, stmt: &Stmt) -> Result<()>;
+    fn visit_var_stmt(&mut self, stmt: &Stmt) -> Result<()>;
 }
 
 pub struct AstPrinter;
@@ -42,6 +44,12 @@ impl ExprVisitor for AstPrinter {
         if let Expr::Grouping { expression } = expr {
             let expr = *expression.clone();
             return Ok(Value::Str(self.parenthesize("group", vec![&expr])?))
+        }
+        Err(Box::new(PrintError::new()))
+    }
+    fn visit_variable(&self, expr: &Expr) -> Result<Value> {
+        if let Expr::Variable(name) = expr {
+            return Ok(Value::Str(name.lexeme.clone()))
         }
         Err(Box::new(PrintError::new()))
     }

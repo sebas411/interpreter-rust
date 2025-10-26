@@ -39,7 +39,7 @@ impl Parser {
         self.peek().token_type == token_type
     }
 
-    fn _synchronize(&mut self) {
+    fn synchronize(&mut self) {
         self.advance();
 
         while !self.is_at_end() {
@@ -138,12 +138,34 @@ impl Parser {
         if self.match_type(vec!["STRING"]) {
             return Ok(Expr::Literal(Value::Str(self.previous().literal)))
         }
+        if self.match_type(vec!["IDENTIFIER"]) {
+            return Ok(Expr::Variable(self.previous()))
+        }
         if self.match_type(vec!["LEFT_PAREN"]) {
             let expr = self.expression()?;
             self.consume("RIGHT_PAREN", "Expect ')' after expression.")?;
             return Ok(Expr::Grouping { expression: Box::new(expr) })
         }
         Err(self.error(self.peek(), "Expect expression."))
+    }
+
+    fn declaration(&mut self) -> Result<Stmt> {
+        if self.match_type(vec!["VAR"]) {
+            return self.var_declaration()
+        }
+        self.statement()
+    }
+
+    fn var_declaration(&mut self) -> Result<Stmt> {
+        let name = self.consume("IDENTIFIER", "Expect variable name.")?;
+
+        let mut initializer = None;
+        if self.match_type(vec!["EQUAL"]) {
+            initializer = Some(self.expression()?);
+        }
+
+        self.consume("SEMICOLON", "Expect ';' after variable declaration.")?;
+        Ok(Stmt::Var { name: name, initializer: initializer })
     }
 
     fn statement(&mut self) -> Result<Stmt> {
@@ -182,12 +204,18 @@ impl Parser {
         }
     }
 
-    pub fn parse(&mut self) -> Result<Vec<Stmt>> {
+    pub fn parse(&mut self) -> Option<Vec<Stmt>> {
         let mut statements = vec![];
         while !self.is_at_end() {
-            statements.push(self.statement()?);
+            let res = self.declaration();
+            if res.is_ok() {
+                statements.push(res.unwrap());
+            } else {
+                self.synchronize();
+                return None
+            }
         }
-        Ok(statements)
+        Some(statements)
     }
 
 }

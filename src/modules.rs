@@ -7,3 +7,4 @@ pub mod interpreter;
 pub mod value;
 pub mod errors;
 pub mod statements;
+pub mod environment;

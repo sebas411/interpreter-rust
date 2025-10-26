@@ -16,7 +16,8 @@ pub enum Expr {
     Grouping {
         expression: Box<Expr>
     },
-    Literal(Value)
+    Literal(Value),
+    Variable(Token),
 }
 
 impl Expr {
@@ -33,6 +34,9 @@ impl Expr {
             },
             Expr::Grouping { expression: _ } => {
                 visitor.visit_grouping(self)
+            }
+            Expr::Variable(_) => {
+                visitor.visit_variable(self)
             }
         }
     }

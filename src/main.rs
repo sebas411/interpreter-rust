@@ -20,8 +20,8 @@ fn run(source: &str) {
     let tokens = scan(source);
 
     let mut parser = Parser::new(tokens);
-    if let Ok(statements) = parser.parse() {
-        let interpreter = Interpreter::new();
+    if let Some(statements) = parser.parse() {
+        let mut interpreter = Interpreter::new();
         interpreter.interpret(statements);
     }
 }
