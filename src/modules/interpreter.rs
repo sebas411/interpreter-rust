@@ -75,6 +75,12 @@ impl ExprVisitor for Interpreter {
 }
 
 impl StmtVisitor for Interpreter {
+    fn visit_expression_stmt(&self, stmt: &Stmt) -> Result<()> {
+        if let Stmt::Expression(expr) = stmt {
+            self.evaluate(expr)?;
+        }
+        Ok(())
+    }
     fn visit_print(&self, stmt: &Stmt) -> Result<()> {
         if let Stmt::Print(expr) = stmt {
             let val = self.evaluate(expr)?;
@@ -96,7 +102,8 @@ impl Interpreter {
     pub fn interpret(&self, statements: Vec<Stmt>) {
         for statement in statements {
             let res = self.execute(statement);
-            if res.is_err() {
+            if let Err(e) = res {
+                runtime_error(e);
                 break;
             }
         }

@@ -12,7 +12,7 @@ impl Stmt {
     pub fn accept(&self, visitor: &dyn StmtVisitor) -> Result<()> {
         match self {
             Stmt::Expression(_) => {
-                Ok(())
+                visitor.visit_expression_stmt(self)
             },
             Stmt::Print(_) => {
                 visitor.visit_print(self)

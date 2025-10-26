@@ -147,14 +147,22 @@ impl Parser {
     }
 
     fn statement(&mut self) -> Result<Stmt> {
-        self.match_type(vec!["PRINT"]);
-        self.print_statement()
+        if self.match_type(vec!["PRINT"]) {
+            return self.print_statement()
+        }
+        self.expression_statement()
+    }
+
+    fn expression_statement(&mut self) -> Result<Stmt> {
+        let value = self.expression()?;
+        self.consume("SEMICOLON", "Expect ';' after value.")?;
+        Ok(Stmt::Expression(value))
     }
 
     fn print_statement(&mut self) -> Result<Stmt> {
-        let value = self.expression()?;
+        let expr = self.expression()?;
         self.consume("SEMICOLON", "Expect ';' after expression.")?;
-        Ok(Stmt::Print(value))
+        Ok(Stmt::Print(expr))
     }
 
     fn consume(&mut self, token_type: &str, message: &str) -> Result<Token> {

@@ -10,6 +10,7 @@ pub trait ExprVisitor {
 }
 
 pub trait StmtVisitor {
+    fn visit_expression_stmt(&self, stmt: &Stmt) -> Result<()>;
     fn visit_print(&self, stmt: &Stmt) -> Result<()>;
 }
 
