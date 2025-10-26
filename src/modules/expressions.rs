@@ -1,4 +1,6 @@
-use crate::modules::{token::Token, value::Value, visitor::Visitor};
+use crate::modules::{errors::LoxError, token::Token, value::Value, visitor::Visitor};
+
+type Result<T> = std::result::Result<T, Box<dyn LoxError>>;
 
 #[derive(Clone, Debug)]
 pub enum Expr {
@@ -18,7 +20,7 @@ pub enum Expr {
 }
 
 impl Expr {
-    pub fn accept(&self, visitor: &dyn Visitor) -> Value {
+    pub fn accept(&self, visitor: &dyn Visitor) -> Result<Value> {
         match self {
             Expr::Unary {operator: _, right: _} => {
                 visitor.visit_unary(self)

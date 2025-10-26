@@ -3,6 +3,7 @@ use std::fs;
 use std::io::{self, Write};
 use std::process;
 use lox_interpreter::has_error;
+use lox_interpreter::has_runtime_error;
 use lox_interpreter::modules::interpreter::Interpreter;
 use lox_interpreter::modules::scanner::Scanner;
 use lox_interpreter::modules::parser::Parser;
@@ -77,5 +78,8 @@ fn main() {
     }
     if has_error() {
         process::exit(65)
+    }
+    if has_runtime_error() {
+        process::exit(70)
     }
 }

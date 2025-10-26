@@ -1,17 +1,7 @@
-use crate::modules::{expressions::Expr, token::Token, value::Value};
+use crate::modules::{errors::ParseError, expressions::Expr, token::Token, value::Value};
 use super::super::error_token;
-use std::fmt;
-
-#[derive(Debug, Clone)]
-struct ParseError;
 
 type Result<T> = std::result::Result<T, ParseError>;
-
-impl fmt::Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Error parsing.")
-    }
-}
 
 pub struct Parser {
     tokens: Vec<Token>,

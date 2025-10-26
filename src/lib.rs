@@ -1,7 +1,8 @@
 pub mod modules;
-use crate::modules::token::Token;
+use crate::modules::{errors::LoxError, token::Token};
 
 static mut HAS_ERROR: bool = false;
+static mut HAS_RUNTIME_ERROR: bool = false;
 
 pub fn is_digit(c: char) -> bool {
     let ascii_c = c as u8;
@@ -34,8 +35,17 @@ pub fn error_token(token: Token, message: &str) {
     }
 }
 
+pub fn runtime_error(err: Box<dyn LoxError>) {
+    eprintln!("{}", err);
+    unsafe {HAS_RUNTIME_ERROR = true};
+}
+
 pub fn has_error() -> bool {
     unsafe {HAS_ERROR}
+}
+
+pub fn has_runtime_error() -> bool {
+    unsafe {HAS_RUNTIME_ERROR}
 }
 
 fn report(line: usize, where_is: &str, message: &str) {

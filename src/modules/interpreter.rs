@@ -1,66 +1,69 @@
-use crate::modules::{expressions::Expr, value::Value, visitor::Visitor};
+use crate::{modules::{errors::{LoxError, RuntimeError}, expressions::Expr, value::Value, visitor::Visitor}, runtime_error};
+
+type Result<T> = std::result::Result<T, Box<dyn LoxError>>;
 
 pub struct Interpreter;
 
 impl Visitor for Interpreter {
-    fn visit_binary(&self, expr: &Expr) -> Value {
+    fn visit_binary(&self, expr: &Expr) -> Result<Value> {
         if let Expr::Binary { left, operator, right } = expr {
-            let left = self.evaluate(left);
-            let right = self.evaluate(right);
+            let left = self.evaluate(left)?;
+            let right = self.evaluate(right)?;
             if let (Value::Num(n_left), Value::Num(n_right)) = (&left, &right) {
                 match operator.token_type.as_str() {
-                    "PLUS" => return Value::Num(n_left + n_right),
-                    "MINUS" => return Value::Num(n_left - n_right),
-                    "STAR" => return Value::Num(n_left * n_right),
-                    "SLASH" => return Value::Num(n_left / n_right),
-                    "GREATER" => return Value::Bool(n_left > n_right),
-                    "GREATER_EQUAL" => return Value::Bool(n_left >= n_right),
-                    "LESS" => return Value::Bool(n_left < n_right),
-                    "LESS_EQUAL" => return Value::Bool(n_left <= n_right),
+                    "PLUS" => return Ok(Value::Num(n_left + n_right)),
+                    "MINUS" => return Ok(Value::Num(n_left - n_right)),
+                    "STAR" => return Ok(Value::Num(n_left * n_right)),
+                    "SLASH" => return Ok(Value::Num(n_left / n_right)),
+                    "GREATER" => return Ok(Value::Bool(n_left > n_right)),
+                    "GREATER_EQUAL" => return Ok(Value::Bool(n_left >= n_right)),
+                    "LESS" => return Ok(Value::Bool(n_left < n_right)),
+                    "LESS_EQUAL" => return Ok(Value::Bool(n_left <= n_right)),
                     _ => ()
                 }
             } else if let (Value::Str(s_left), Value::Str(s_right)) = (&left, &right) {
                 if operator.token_type == "PLUS" {
-                    return Value::Str(format!("{}{}", s_left, s_right));
+                    return Ok(Value::Str(format!("{}{}", s_left, s_right)));
                 }
             }
 
             match operator.token_type.as_str() {
-                "BANG_EQUAL" => return Value::Bool(!self.is_equal(left, right)),
-                "EQUAL_EQUAL" => return Value::Bool(self.is_equal(left, right)),
+                "BANG_EQUAL" => return Ok(Value::Bool(!self.is_equal(left, right))),
+                "EQUAL_EQUAL" => return Ok(Value::Bool(self.is_equal(left, right))),
                 _ => (),
             }
         }
-        Value::Nil
+        Err(Box::new(RuntimeError::new(None, "Unknown runtime error")))
     }
-    fn visit_grouping(&self, expr: &Expr) -> Value {
+    fn visit_grouping(&self, expr: &Expr) -> Result<Value> {
         if let Expr::Grouping { expression } = expr {
-            return self.evaluate(expression);
+            return Ok(self.evaluate(expression)?)
         }
-        Value::Nil
+        Err(Box::new(RuntimeError::new(None, "Unknown runtime error")))
     }
-    fn visit_literal(&self, expr: &Expr) -> Value {
+    fn visit_literal(&self, expr: &Expr) -> Result<Value> {
         if let Expr::Literal(value) = expr {
-            return value.clone()
+            return Ok(value.clone())
         }
-        Value::Nil
+        Err(Box::new(RuntimeError::new(None, "Unknown runtime error")))
     }
-    fn visit_unary(&self, expr: &Expr) -> Value {
+    fn visit_unary(&self, expr: &Expr) -> Result<Value> {
         if let Expr::Unary { operator, right } = expr {
-            let right = self.evaluate(&right);
+            let right = self.evaluate(&right)?;
             match operator.token_type.as_str() {
                 "MINUS" => {
                     if let Value::Num(n) = right {
-                        return Value::Num(-n)
+                        return Ok(Value::Num(-n))
                     } else {
-                        return Value::Nil
+                        let my_error = RuntimeError::new(Some(operator.clone()), "Operand must be a number.");
+                        return Err(Box::new(my_error))
                     }
                 },
-                "BANG" => return Value::Bool(!self.is_truthy(right)),
+                "BANG" => return Ok(Value::Bool(!self.is_truthy(right))),
                 _ => ()
             }
         }
-        Value::Nil
+        Err(Box::new(RuntimeError::new(None, "Unknown runtime error")))
     }
 }
 
@@ -71,6 +74,11 @@ impl Interpreter {
 
     pub fn interpret(&self, expr: &Expr) {
         let val = self.evaluate(expr);
+        if let Err(e) = val {
+            runtime_error(e);
+            return;
+        }
+        let val = val.unwrap_or(Value::Nil);
         if let Value::Num(n) = val {
             println!("{}", n.value());
         } else {
@@ -78,7 +86,7 @@ impl Interpreter {
         }
     }
 
-    fn evaluate(&self, expr: &Expr) -> Value {
+    fn evaluate(&self, expr: &Expr) -> Result<Value> {
         expr.accept(self)
     }
 

@@ -1,42 +1,44 @@
-use crate::modules::{expressions::Expr, value::Value};
+use crate::modules::{errors::{LoxError, PrintError}, expressions::Expr, value::Value};
+
+type Result<T> = std::result::Result<T, Box<dyn LoxError>>;
 
 pub trait Visitor {
-    fn visit_binary(&self, expr: &Expr) -> Value;
-    fn visit_unary(&self, expr: &Expr) -> Value;
-    fn visit_literal(&self, expr: &Expr) -> Value;
-    fn visit_grouping(&self, expr: &Expr) -> Value;
+    fn visit_binary(&self, expr: &Expr) -> Result<Value>;
+    fn visit_unary(&self, expr: &Expr) -> Result<Value>;
+    fn visit_literal(&self, expr: &Expr) -> Result<Value>;
+    fn visit_grouping(&self, expr: &Expr) -> Result<Value>;
 }
 
 pub struct AstPrinter;
 
 impl Visitor for AstPrinter {
-    fn visit_binary(&self, expr: &Expr) -> Value {
+    fn visit_binary(&self, expr: &Expr) -> Result<Value> {
         if let Expr::Binary { left, operator, right } = expr {
             let right = *right.clone();
             let left = *left.clone();
-            return Value::Str(self.parenthesize(&operator.lexeme, vec![&left, &right]));
+            return Ok(Value::Str(self.parenthesize(&operator.lexeme, vec![&left, &right])?));
         }
-        Value::Str("".into())
+        Err(Box::new(PrintError::new()))
     }
-    fn visit_unary(&self, expr: &Expr) -> Value {
+    fn visit_unary(&self, expr: &Expr) -> Result<Value> {
         if let Expr::Unary { operator, right } = expr {
             let expr = *right.clone();
-            return Value::Str(self.parenthesize(&operator.lexeme, vec![&expr]))
+            return Ok(Value::Str(self.parenthesize(&operator.lexeme, vec![&expr])?))
         }
-        Value::Str("".into())
+        Err(Box::new(PrintError::new()))
     }
-    fn visit_literal(&self, expr: &Expr) -> Value {
+    fn visit_literal(&self, expr: &Expr) -> Result<Value> {
         if let Expr::Literal(value) = expr {
-            return Value::Str(format!("{}", value));
+            return Ok(Value::Str(format!("{}", value)))
         }
-        Value::Str("".into())
+        Err(Box::new(PrintError::new()))
     }
-    fn visit_grouping(&self, expr: &Expr) -> Value {
+    fn visit_grouping(&self, expr: &Expr) -> Result<Value> {
         if let Expr::Grouping { expression } = expr {
             let expr = *expression.clone();
-            return Value::Str(self.parenthesize("group", vec![&expr]));
+            return Ok(Value::Str(self.parenthesize("group", vec![&expr])?))
         }
-        Value::Str("".into())
+        Err(Box::new(PrintError::new()))
     }
 }
 
@@ -45,21 +47,24 @@ impl AstPrinter {
         Self {}
     }
     pub fn print_tree(&self, expr: &Expr) {
-        let printable = expr.accept(self);
-        println!("{}", printable);
+        if let Ok(printable) = expr.accept(self) {
+            println!("{}", printable);
+        } else {
+            eprintln!("Error printing tree");
+        }
     }
-    fn parenthesize(&self, name: &str, expressions: Vec<&Expr>) -> String {
+    fn parenthesize(&self, name: &str, expressions: Vec<&Expr>) -> Result<String> {
         let mut parenthesized_str = String::new();
         parenthesized_str.push_str(&format!("({}", name));
         for expr in expressions {
             parenthesized_str.push(' ');
-            if let Value::Str(my_val) = expr.accept(self) {
+            if let Value::Str(my_val) = expr.accept(self)? {
                 parenthesized_str.push_str(&my_val);
             } else {
                 panic!()
             }
         }
         parenthesized_str.push(')');
-        parenthesized_str
+        Ok(parenthesized_str)
     }
 }
