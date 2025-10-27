@@ -189,7 +189,23 @@ impl Parser {
         if self.match_type(vec!["LEFT_BRACE"]) {
             return self.block()
         }
+        if self.match_type(vec!["IF"]) {
+            return self.if_statement()
+        }
         self.expression_statement()
+    }
+
+    fn if_statement(&mut self) -> Result<Stmt> {
+        self.consume("LEFT_PAREN", "Expected '(' after 'if'.")?;
+        let condition = self.expression()?;
+        self.consume("RIGHT_PAREN", "Expected ')' after if condition.")?;
+        let then_statement = self.statement()?;
+        let mut else_statement = None;
+        if self.match_type(vec!["ELSE"]) {
+            else_statement = Some(Box::new(self.statement()?))
+        }
+
+        Ok(Stmt::IfStatement { condition, then_branch: Box::new(then_statement), else_branch: else_statement })
     }
 
     fn block(&mut self) -> Result<Stmt> {

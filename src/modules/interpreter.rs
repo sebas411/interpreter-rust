@@ -125,6 +125,17 @@ impl StmtVisitor for Interpreter {
         }
         Ok(())
     }
+    fn visit_if_statement(&mut self, stmt: &Stmt) -> Result<()> {
+        if let Stmt::IfStatement { condition, then_branch, else_branch } = stmt {
+            let conditional_value = self.evaluate(condition)?;
+            if self.is_truthy(conditional_value) {
+                self.execute(*then_branch.clone())?;
+            } else if let Some(else_branch) = else_branch {
+                self.execute(*else_branch.clone())?;
+            }
+        }
+        Ok(())
+    }
 }
 
 impl Interpreter {

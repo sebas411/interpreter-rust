@@ -13,6 +13,11 @@ pub enum Stmt {
     Block {
         statements: Vec<Stmt>,
     },
+    IfStatement {
+        condition: Expr,
+        then_branch: Box<Stmt>,
+        else_branch: Option<Box<Stmt>>,
+    }
 }
 
 impl Stmt {
@@ -30,6 +35,9 @@ impl Stmt {
             Stmt::Block { .. } => {
                 visitor.visit_block(self)
             },
+            Stmt::IfStatement { .. } => {
+                visitor.visit_if_statement(self)
+            }
         }
     }
 }
