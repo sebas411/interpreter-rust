@@ -186,7 +186,20 @@ impl Parser {
         if self.match_type(vec!["PRINT"]) {
             return self.print_statement()
         }
+        if self.match_type(vec!["LEFT_BRACE"]) {
+            return self.block()
+        }
         self.expression_statement()
+    }
+
+    fn block(&mut self) -> Result<Stmt> {
+        let mut statements = vec![];
+        while !self.check("RIGHT_BRACE") && !self.is_at_end() {
+            statements.push(self.declaration()?);
+        }
+
+        self.consume("RIGHT_BRACE", "Expect '}' after block.")?;
+        Ok(Stmt::Block { statements: statements })
     }
 
     fn expression_statement(&mut self) -> Result<Stmt> {

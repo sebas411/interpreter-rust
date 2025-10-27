@@ -119,6 +119,12 @@ impl StmtVisitor for Interpreter {
         }
         Ok(())
     }
+    fn visit_block(&mut self, stmt: &Stmt) -> Result<()> {
+        if let Stmt::Block { statements } = stmt {
+            self.execute_block(statements.to_vec(), Environment::new_with_enclosing(Box::new(self.environment.clone())))?;
+        }
+        Ok(())
+    }
 }
 
 impl Interpreter {
@@ -156,6 +162,22 @@ impl Interpreter {
 
     fn evaluate(&mut self, expr: &Expr) -> Result<Value> {
         expr.accept(self)
+    }
+
+    fn execute_block(&mut self, statements: Vec<Stmt>, environment: Environment) -> Result<()> {
+        let previous = self.environment.clone();
+
+        self.environment = environment;
+
+        for statement in statements {
+            if let Err(e) = self.execute(statement) {
+                self.environment = previous;
+                return Err(e)
+            }
+        }
+
+        self.environment = previous;
+        Ok(())
     }
 
     fn is_truthy(&self, object: Value) -> bool {

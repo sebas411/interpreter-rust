@@ -10,6 +10,9 @@ pub enum Stmt {
         name: Token,
         initializer: Option<Expr>,
     },
+    Block {
+        statements: Vec<Stmt>,
+    },
 }
 
 impl Stmt {
@@ -23,6 +26,9 @@ impl Stmt {
             },
             Stmt::Var { .. } => {
                 visitor.visit_var_stmt(self)
+            },
+            Stmt::Block { .. } => {
+                visitor.visit_block(self)
             },
         }
     }
