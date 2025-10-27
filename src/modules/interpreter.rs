@@ -7,7 +7,7 @@ pub struct Interpreter {
 }
 
 impl ExprVisitor for Interpreter {
-    fn visit_binary(&self, expr: &Expr) -> Result<Value> {
+    fn visit_binary(&mut self, expr: &Expr) -> Result<Value> {
         if let Expr::Binary { left, operator, right } = expr {
             let left = self.evaluate(left)?;
             let right = self.evaluate(right)?;
@@ -44,7 +44,7 @@ impl ExprVisitor for Interpreter {
         }
         Err(Box::new(RuntimeError::new(None, "Unknown runtime error")))
     }
-    fn visit_grouping(&self, expr: &Expr) -> Result<Value> {
+    fn visit_grouping(&mut self, expr: &Expr) -> Result<Value> {
         if let Expr::Grouping { expression } = expr {
             return Ok(self.evaluate(expression)?)
         }
@@ -56,7 +56,7 @@ impl ExprVisitor for Interpreter {
         }
         Err(Box::new(RuntimeError::new(None, "Unknown runtime error")))
     }
-    fn visit_unary(&self, expr: &Expr) -> Result<Value> {
+    fn visit_unary(&mut self, expr: &Expr) -> Result<Value> {
         if let Expr::Unary { operator, right } = expr {
             let right = self.evaluate(&right)?;
             match operator.token_type.as_str() {
@@ -80,16 +80,24 @@ impl ExprVisitor for Interpreter {
         }
         Err(Box::new(RuntimeError::new(None, "Unknown runtime error")))
     }
+    fn visit_asign(&mut self, expr: &Expr) -> Result<Value> {
+        if let Expr::Assign { name, value } = expr {
+            let value = self.evaluate(value)?;
+            self.environment.assign(name, &value)?;
+            return Ok(value)
+        }
+        Err(Box::new(RuntimeError::new(None, "Unknown runtime error")))
+    }
 }
 
 impl StmtVisitor for Interpreter {
-    fn visit_expression_stmt(&self, stmt: &Stmt) -> Result<()> {
+    fn visit_expression_stmt(&mut self, stmt: &Stmt) -> Result<()> {
         if let Stmt::Expression(expr) = stmt {
             self.evaluate(expr)?;
         }
         Ok(())
     }
-    fn visit_print(&self, stmt: &Stmt) -> Result<()> {
+    fn visit_print(&mut self, stmt: &Stmt) -> Result<()> {
         if let Stmt::Print(expr) = stmt {
             let val = self.evaluate(expr)?;
             if let Value::Num(n) = val {
@@ -107,7 +115,7 @@ impl StmtVisitor for Interpreter {
                 value = self.evaluate(init)?;
             }
 
-            self.environment.define(&name.lexeme, value);
+            self.environment.define(&name.lexeme, &value);
         }
         Ok(())
     }
@@ -132,7 +140,7 @@ impl Interpreter {
         stmt.accept(self)
     }
 
-    pub fn evaluate_expression(&self, expr: &Expr) {
+    pub fn evaluate_expression(&mut self, expr: &Expr) {
         let val = self.evaluate(expr);
         if let Err(e) = val {
             runtime_error(e);
@@ -146,7 +154,7 @@ impl Interpreter {
         }
     }
 
-    fn evaluate(&self, expr: &Expr) -> Result<Value> {
+    fn evaluate(&mut self, expr: &Expr) -> Result<Value> {
         expr.accept(self)
     }
 

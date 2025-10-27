@@ -53,7 +53,7 @@ fn main() {
             let tokens = scan(&file_contents);
             let mut parser = Parser::new(tokens);
             if let Some(expr) = parser.parse_expr() {
-                let printer = AstPrinter::new();
+                let mut printer = AstPrinter::new();
                 printer.print_tree(&expr);
             }
         },
@@ -61,7 +61,7 @@ fn main() {
             let tokens = scan(&file_contents);
             let mut parser = Parser::new(tokens);
             if let Some(expr) = parser.parse_expr() {
-                let interpreter = Interpreter::new();
+                let mut interpreter = Interpreter::new();
                 interpreter.evaluate_expression(&expr);
             }
         },

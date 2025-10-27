@@ -16,12 +16,16 @@ pub enum Expr {
     Grouping {
         expression: Box<Expr>
     },
+    Assign {
+        name: Token,
+        value: Box<Expr>,
+    },
     Literal(Value),
     Variable(Token),
 }
 
 impl Expr {
-    pub fn accept(&self, visitor: &dyn ExprVisitor) -> Result<Value> {
+    pub fn accept(&self, visitor: &mut dyn ExprVisitor) -> Result<Value> {
         match self {
             Expr::Unary {operator: _, right: _} => {
                 visitor.visit_unary(self)
@@ -32,12 +36,15 @@ impl Expr {
             Expr::Literal(_) => {
                 visitor.visit_literal(self)
             },
-            Expr::Grouping { expression: _ } => {
+            Expr::Grouping { .. } => {
                 visitor.visit_grouping(self)
-            }
+            },
             Expr::Variable(_) => {
                 visitor.visit_variable(self)
-            }
+            },
+            Expr::Assign { .. } => {
+                visitor.visit_asign(self)
+            },
         }
     }
 }

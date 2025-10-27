@@ -12,8 +12,16 @@ impl Environment {
         Self { values: HashMap::new() }
     }
 
-    pub fn define(&mut self, name: &str, value: Value) {
-        self.values.insert(name.into(), value);
+    pub fn define(&mut self, name: &str, value: &Value) {
+        self.values.insert(name.into(), value.clone());
+    }
+
+    pub fn assign(&mut self, name: &Token, value: &Value) -> Result<()> {
+        if self.values.contains_key(&name.lexeme) {
+            self.values.insert(name.lexeme.clone(), value.clone());
+            return Ok(())
+        }
+        Err(Box::new(RuntimeError::new(Some(name.clone()), &format!("Undefined variable '{}'.", name.lexeme))))
     }
 
     pub fn get(&self, name: &Token) -> Result<Value> {
