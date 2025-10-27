@@ -121,7 +121,7 @@ impl StmtVisitor for Interpreter {
     }
     fn visit_block(&mut self, stmt: &Stmt) -> Result<()> {
         if let Stmt::Block { statements } = stmt {
-            self.execute_block(statements.to_vec(), Environment::new_with_enclosing(Box::new(self.environment.clone())))?;
+            self.execute_block(statements.to_vec(), Environment::new_with_enclosing(&self.environment))?;
         }
         Ok(())
     }
@@ -175,6 +175,8 @@ impl Interpreter {
                 return Err(e)
             }
         }
+
+        let previous = self.environment.get_parent();
 
         self.environment = previous;
         Ok(())

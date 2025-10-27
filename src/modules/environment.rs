@@ -14,8 +14,8 @@ impl Environment {
         Self { values: HashMap::new(), enclosing: None }
     }
 
-    pub fn new_with_enclosing(env: Box<Environment>) -> Self {
-        Self { values: HashMap::new(), enclosing: Some(env) }
+    pub fn new_with_enclosing(env: &Environment) -> Self {
+        Self { values: HashMap::new(), enclosing: Some(Box::new(env.clone())) }
     }
 
     pub fn define(&mut self, name: &str, value: &Value) {
@@ -44,5 +44,12 @@ impl Environment {
         }
         let err = RuntimeError::new(Some(name.clone()), &format!("Undefined variable '{}'.", name.lexeme));
         Err(Box::new(err))
+    }
+
+    pub fn get_parent(&self) -> Environment {
+        if let Some(env) = &self.enclosing {
+            return *env.clone();
+        }
+        return Environment::new();
     }
 }
