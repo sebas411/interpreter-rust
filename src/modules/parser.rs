@@ -65,6 +65,8 @@ impl Parser {
         return false;
     }
 
+    // Expression generators
+
     fn expression(&mut self) -> Result<Expr> {
         self.assignment()
     }
@@ -185,6 +187,10 @@ impl Parser {
         Err(self.error(self.peek(), "Expect expression."))
     }
 
+    // End expression generators
+
+    // Statement generators
+
     fn declaration(&mut self) -> Result<Stmt> {
         if self.match_type(vec!["VAR"]) {
             return self.var_declaration()
@@ -217,7 +223,58 @@ impl Parser {
         if self.match_type(vec!["WHILE"]) {
             return self.while_statement()
         }
+        if self.match_type(vec!["FOR"]) {
+            return self.for_statement()
+        }
         self.expression_statement()
+    }
+
+    fn for_statement(&mut self) -> Result<Stmt> {
+        self.consume("LEFT_PAREN", "Expected '(' after 'for'.")?;
+
+        let initializer;
+        if self.match_type(vec!["VAR"]) {
+            initializer = Some(self.var_declaration()?);
+        } else if self.match_type(vec!["SEMICOLON"]) {
+            initializer = None;
+        } else {
+            initializer = Some(self.expression_statement()?);
+        }
+
+        let condition;
+        if self.check("SEMICOLON") {
+            condition = None;
+        } else {
+            condition = Some(self.expression()?);
+        }
+        self.consume("SEMICOLON", "Expected ';' after loop condition.")?;
+
+        let increment;
+        if self.check("RIGHT_PAREN") {
+            increment = None;
+        } else {
+            increment = Some(self.expression()?);
+        }
+        self.consume("RIGHT_PAREN", "Expected ')' after for clauses.")?;
+
+        let mut body = self.statement()?;
+
+        if let Some(increment) = increment {
+            let increment_statement = Stmt::Expression(increment);
+            body = Stmt::Block { statements: vec![body, increment_statement ] };
+        }
+
+        let mut while_condition = Expr::Literal(Value::Bool(true));
+        if let Some(condition) = condition {
+            while_condition = condition;
+        }
+        body = Stmt::While { condition: while_condition, body: Box::new(body) };
+
+        if let Some(initializer) = initializer {
+            body = Stmt::Block { statements: vec![initializer, body] };
+        }
+        
+        Ok(body)
     }
 
     fn while_statement(&mut self) -> Result<Stmt> {
@@ -262,6 +319,8 @@ impl Parser {
         self.consume("SEMICOLON", "Expect ';' after expression.")?;
         Ok(Stmt::Print(expr))
     }
+
+    // End statement generators
 
     fn consume(&mut self, token_type: &str, message: &str) -> Result<Token> {
         if self.check(token_type) {return Ok(self.advance())};
