@@ -13,11 +13,15 @@ pub enum Stmt {
     Block {
         statements: Vec<Stmt>,
     },
-    IfStatement {
+    If {
         condition: Expr,
         then_branch: Box<Stmt>,
         else_branch: Option<Box<Stmt>>,
-    }
+    },
+    While {
+        condition: Expr,
+        body: Box<Stmt>,
+    },
 }
 
 impl Stmt {
@@ -35,9 +39,12 @@ impl Stmt {
             Stmt::Block { .. } => {
                 visitor.visit_block(self)
             },
-            Stmt::IfStatement { .. } => {
+            Stmt::If { .. } => {
                 visitor.visit_if_statement(self)
-            }
+            },
+            Stmt::While { .. } => {
+                visitor.visit_while_statement(self)
+            },
         }
     }
 }

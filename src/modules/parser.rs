@@ -214,7 +214,18 @@ impl Parser {
         if self.match_type(vec!["IF"]) {
             return self.if_statement()
         }
+        if self.match_type(vec!["WHILE"]) {
+            return self.while_statement()
+        }
         self.expression_statement()
+    }
+
+    fn while_statement(&mut self) -> Result<Stmt> {
+        self.consume("LEFT_PAREN", "Expected '(' after 'while'.")?;
+        let condition = self.expression()?;
+        self.consume("RIGHT_PAREN", "Expected ')' after condition.")?;
+        let statement = self.statement()?;
+        Ok(Stmt::While { condition, body: Box::new(statement) })
     }
 
     fn if_statement(&mut self) -> Result<Stmt> {
@@ -227,7 +238,7 @@ impl Parser {
             else_statement = Some(Box::new(self.statement()?))
         }
 
-        Ok(Stmt::IfStatement { condition, then_branch: Box::new(then_statement), else_branch: else_statement })
+        Ok(Stmt::If { condition, then_branch: Box::new(then_statement), else_branch: else_statement })
     }
 
     fn block(&mut self) -> Result<Stmt> {

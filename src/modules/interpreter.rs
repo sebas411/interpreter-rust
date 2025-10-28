@@ -138,12 +138,22 @@ impl StmtVisitor for Interpreter {
         Ok(())
     }
     fn visit_if_statement(&mut self, stmt: &Stmt) -> Result<()> {
-        if let Stmt::IfStatement { condition, then_branch, else_branch } = stmt {
+        if let Stmt::If { condition, then_branch, else_branch } = stmt {
             let conditional_value = self.evaluate(condition)?;
             if self.is_truthy(&conditional_value) {
-                self.execute(*then_branch.clone())?;
+                self.execute(then_branch)?;
             } else if let Some(else_branch) = else_branch {
-                self.execute(*else_branch.clone())?;
+                self.execute(else_branch)?;
+            }
+        }
+        Ok(())
+    }
+    fn visit_while_statement(&mut self, stmt: &Stmt) -> Result<()> {
+        if let Stmt::While { condition, body } = stmt {
+            let mut conditional_value = self.evaluate(condition)?;
+            while self.is_truthy(&conditional_value) {
+                self.execute(body)?;
+                conditional_value = self.evaluate(condition)?;
             }
         }
         Ok(())
@@ -157,7 +167,7 @@ impl Interpreter {
 
     pub fn interpret(&mut self, statements: Vec<Stmt>) {
         for statement in statements {
-            let res = self.execute(statement);
+            let res = self.execute(&statement);
             if let Err(e) = res {
                 runtime_error(e);
                 break;
@@ -165,7 +175,7 @@ impl Interpreter {
         }
     }
 
-    fn execute(&mut self, stmt: Stmt) -> Result<()> {
+    fn execute(&mut self, stmt: &Stmt) -> Result<()> {
         stmt.accept(self)
     }
 
@@ -193,7 +203,7 @@ impl Interpreter {
         self.environment = environment;
 
         for statement in statements {
-            if let Err(e) = self.execute(statement) {
+            if let Err(e) = self.execute(&statement) {
                 self.environment = previous;
                 return Err(e)
             }

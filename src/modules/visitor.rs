@@ -18,6 +18,7 @@ pub trait StmtVisitor {
     fn visit_var_stmt(&mut self, stmt: &Stmt) -> Result<()>;
     fn visit_block(&mut self, stmt: &Stmt) -> Result<()>;
     fn visit_if_statement(&mut self, stmt: &Stmt) -> Result<()>;
+    fn visit_while_statement(&mut self, stmt: &Stmt) -> Result<()>;
 }
 
 pub struct AstPrinter;
