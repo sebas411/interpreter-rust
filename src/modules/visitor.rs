@@ -9,6 +9,7 @@ pub trait ExprVisitor {
     fn visit_grouping(&mut self, expr: &Expr) -> Result<Value>;
     fn visit_variable(&self, expr: &Expr) -> Result<Value>;
     fn visit_asign(&mut self, expr: &Expr) -> Result<Value>;
+    fn visit_logical(&mut self, expr: &Expr) -> Result<Value>;
 }
 
 pub trait StmtVisitor {
@@ -57,6 +58,12 @@ impl ExprVisitor for AstPrinter {
         Err(Box::new(PrintError::new()))
     }
     fn visit_asign(&mut self, _: &Expr) -> Result<Value> {
+        Err(Box::new(PrintError::new()))
+    }
+    fn visit_logical(&mut self, expr: &Expr) -> Result<Value> {
+        if let Expr::Logical { left, operator, right } = expr {
+            return Ok(Value::Str(self.parenthesize(&operator.lexeme, vec![left, &right])?));
+        }
         Err(Box::new(PrintError::new()))
     }
 }

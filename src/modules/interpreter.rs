@@ -68,7 +68,7 @@ impl ExprVisitor for Interpreter {
                         return Err(Box::new(my_error))
                     }
                 },
-                "BANG" => return Ok(Value::Bool(!self.is_truthy(right))),
+                "BANG" => return Ok(Value::Bool(!self.is_truthy(&right))),
                 _ => ()
             }
         }
@@ -85,6 +85,18 @@ impl ExprVisitor for Interpreter {
             let value = self.evaluate(value)?;
             self.environment.assign(name, &value)?;
             return Ok(value)
+        }
+        Err(Box::new(RuntimeError::new(None, "Unknown runtime error")))
+    }
+    fn visit_logical(&mut self, expr: &Expr) -> Result<Value> {
+        if let Expr::Logical { left, operator, right } = expr {
+            let left = self.evaluate(left)?;
+            if operator.token_type == "OR" && self.is_truthy(&left) || operator.token_type == "AND" && !self.is_truthy(&left) {
+                return Ok(left)
+            } else {
+                let right = self.evaluate(right)?;
+                return Ok(right)
+            }
         }
         Err(Box::new(RuntimeError::new(None, "Unknown runtime error")))
     }
@@ -128,7 +140,7 @@ impl StmtVisitor for Interpreter {
     fn visit_if_statement(&mut self, stmt: &Stmt) -> Result<()> {
         if let Stmt::IfStatement { condition, then_branch, else_branch } = stmt {
             let conditional_value = self.evaluate(condition)?;
-            if self.is_truthy(conditional_value) {
+            if self.is_truthy(&conditional_value) {
                 self.execute(*then_branch.clone())?;
             } else if let Some(else_branch) = else_branch {
                 self.execute(*else_branch.clone())?;
@@ -193,10 +205,10 @@ impl Interpreter {
         Ok(())
     }
 
-    fn is_truthy(&self, object: Value) -> bool {
+    fn is_truthy(&self, object: &Value) -> bool {
         match object {
-            Value::Bool(val) => val,
-            Value::Nil => false,
+            &Value::Bool(val) => val,
+            &Value::Nil => false,
             _ => true,
         }
     }

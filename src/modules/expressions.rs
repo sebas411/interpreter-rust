@@ -22,15 +22,20 @@ pub enum Expr {
     },
     Literal(Value),
     Variable(Token),
+    Logical {
+        left: Box<Expr>,
+        operator: Token,
+        right: Box<Expr>,
+    },
 }
 
 impl Expr {
     pub fn accept(&self, visitor: &mut dyn ExprVisitor) -> Result<Value> {
         match self {
-            Expr::Unary {operator: _, right: _} => {
+            Expr::Unary { .. } => {
                 visitor.visit_unary(self)
             },
-            Expr::Binary { left: _, operator: _, right: _ } => {
+            Expr::Binary { .. } => {
                 visitor.visit_binary(self)
             },
             Expr::Literal(_) => {
@@ -44,6 +49,9 @@ impl Expr {
             },
             Expr::Assign { .. } => {
                 visitor.visit_asign(self)
+            },
+            Expr::Logical { .. } => {
+                visitor.visit_logical(self)
             },
         }
     }

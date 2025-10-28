@@ -70,7 +70,7 @@ impl Parser {
     }
 
     fn assignment(&mut self) -> Result<Expr> {
-        let expr = self.equality()?;
+        let expr = self.logic_or()?;
         if self.match_type(vec!["EQUAL"]) {
             let equals = self.previous();
             let value = self.assignment()?;
@@ -79,6 +79,28 @@ impl Parser {
                 return Ok(Expr::Assign { name: name, value: Box::new(value) })
             }
             self.error(equals, "Invalid assignment target.");
+        }
+        Ok(expr)
+    }
+
+    fn logic_or(&mut self) -> Result<Expr> {
+        let expr = self.logic_and()?;
+        if self.match_type(vec!["OR"]) {
+            let or_token = self.previous();
+            let left = expr;
+            let right = self.logic_or()?;
+            return Ok(Expr::Logical { left: Box::new(left), operator: or_token, right: Box::new(right) })
+        }
+        Ok(expr)
+    }
+
+    fn logic_and(&mut self) -> Result<Expr> {
+        let expr = self.equality()?;
+        if self.match_type(vec!["AND"]) {
+            let and_token = self.previous();
+            let left = expr;
+            let right = self.logic_and()?;
+            return Ok(Expr::Logical { left: Box::new(left), operator: and_token, right: Box::new(right) })
         }
         Ok(expr)
     }
