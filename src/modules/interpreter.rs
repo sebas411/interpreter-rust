@@ -109,6 +109,10 @@ impl ExprVisitor for Interpreter {
             let arguments = arguments.iter().map(|argument| self.evaluate(argument)).collect::<Result<Vec<Value>>>()?;
 
             let function = self.get_callable(&callee, paren)?;
+            if arguments.len() != function.arity() {
+                let err = RuntimeError::new(Some(paren.clone()), &format!("Expected {} arguments but got {}.", function.arity(), arguments.len()));
+                return Err(Box::new(err))
+            }
             return function.call(self, arguments);
         }
         Err(Box::new(RuntimeError::new(None, "Can only call functions and classes.")))
