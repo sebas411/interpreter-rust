@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use crate::{modules::{callable::{LoxCallable, UserFunction}, environment::Environment, errors::{LoxError, RuntimeError}, expressions::Expr, statements::Stmt, value::Value, visitor::{ExprVisitor, StmtVisitor}}, runtime_error};
+use crate::{modules::{callable::LoxCallable, environment::Environment, errors::{LoxError, RuntimeError}, expressions::Expr, statements::Stmt, value::Value, visitor::{ExprVisitor, StmtVisitor}}, runtime_error};
 
 type Result<T> = std::result::Result<T, Box<dyn LoxError>>;
 
@@ -178,9 +178,8 @@ impl Interpreter {
     }
 
     fn get_callable(&self, value: &Value) -> Result<Rc<dyn LoxCallable>> {
-        if let Value::FunctionName(name) = value {
-            let function = self.environment.get_function(name)?;
-            return Ok(function)
+        if let Value::Function(function) = value {
+            return Ok(function.clone())
         }
         Err(Box::new(RuntimeError::new(None, "Unable to get function")))
     }

@@ -1,4 +1,6 @@
-use std::{fmt, ops::{Add, Div, Mul, Neg, Sub}};
+use std::{fmt, ops::{Add, Div, Mul, Neg, Sub}, rc::Rc};
+
+use crate::modules::callable::LoxCallable;
 
 macro_rules! impl_op {
     ($trait:ident, $method:ident, $fun:tt) => {
@@ -88,13 +90,13 @@ impl Neg for Number {
 }
 
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 pub enum Value {
     Num(Number),
     Str(String),
     Bool(bool),
     Nil,
-    FunctionName(String),
+    Function(Rc<dyn LoxCallable>),
 }
 
 impl Value {
@@ -128,7 +130,19 @@ impl fmt::Display for Value {
             Value::Str(s)    => write!(f, "{}", s),
             Value::Bool(b)   => write!(f, "{}", b),
             Value::Nil       => write!(f, "nil"),
-            Value::FunctionName(s) => write!(f, "{}", s),
+            Value::Function(_) => write!(f, "function"),
+        }
+    }
+}
+
+impl PartialEq for Value {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Value::Num(n1), Value::Num(n2)) => n1 == n2,
+            (Value::Nil, Value::Nil) => true,
+            (Value::Str(s1), Value::Str(s2)) => s1 == s2,
+            (Value::Bool(b1), Value::Bool(b2)) => b1 == b2,
+            _ => false
         }
     }
 }
