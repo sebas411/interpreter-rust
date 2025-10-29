@@ -130,7 +130,7 @@ impl fmt::Display for Value {
             Value::Str(s)    => write!(f, "{}", s),
             Value::Bool(b)   => write!(f, "{}", b),
             Value::Nil       => write!(f, "nil"),
-            Value::Function(_) => write!(f, "function"),
+            Value::Function(func) => write!(f, "{}", func.to_string()),
         }
     }
 }

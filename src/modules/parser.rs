@@ -224,7 +224,29 @@ impl Parser {
         if self.match_type(vec!["VAR"]) {
             return self.var_declaration()
         }
+        if self.match_type(vec!["FUN"]) {
+            return self.function("function")
+        }
         self.statement()
+    }
+
+    fn function(&mut self, kind: &str) -> Result<Stmt> {
+        let name = self.consume("IDENTIFIER", &format!("Expect {} name.", kind))?;
+        self.consume("LEFT_PAREN", &format!("Expect '(' after {} name.", kind))?;
+        let mut parameters = vec![];
+        if !self.check("RIGHT_PAREN") {
+            parameters.push(self.consume("IDENTIFIER", "Expect parameter name.")?);
+            while self.match_type(vec!["COMMA"]) {
+                if parameters.len() >= 255 {
+                    self.error(self.peek(), "Can't have more than 255 parameters.");
+                }
+                parameters.push(self.consume("IDENTIFIER", "Expect parameter name.")?);
+            }
+        }
+        self.consume("RIGHT_PAREN", "Expect ')' after parameters")?;
+        self.consume("LEFT_BRACE", &format!("Expect '{{' before {} body.", kind))?;
+        let body = self.block()?;
+        Ok(Stmt::Function { name, params: parameters, body })
     }
 
     fn var_declaration(&mut self) -> Result<Stmt> {
@@ -244,7 +266,7 @@ impl Parser {
             return self.print_statement()
         }
         if self.match_type(vec!["LEFT_BRACE"]) {
-            return self.block()
+            return Ok(Stmt::Block { statements: self.block()? })
         }
         if self.match_type(vec!["IF"]) {
             return self.if_statement()
@@ -327,14 +349,14 @@ impl Parser {
         Ok(Stmt::If { condition, then_branch: Box::new(then_statement), else_branch: else_statement })
     }
 
-    fn block(&mut self) -> Result<Stmt> {
+    fn block(&mut self) -> Result<Vec<Stmt>> {
         let mut statements = vec![];
         while !self.check("RIGHT_BRACE") && !self.is_at_end() {
             statements.push(self.declaration()?);
         }
 
         self.consume("RIGHT_BRACE", "Expect '}' after block.")?;
-        Ok(Stmt::Block { statements: statements })
+        Ok(statements)
     }
 
     fn expression_statement(&mut self) -> Result<Stmt> {

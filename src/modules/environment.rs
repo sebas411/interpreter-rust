@@ -10,11 +10,15 @@ pub struct Environment {
 }
 
 impl Environment {
-    pub fn new() -> Self {
+    pub fn new_globals() -> Self {
         let mut values_map: HashMap<String, Value> = HashMap::new();
         let function_value = Value::Function(Rc::new(ClockFunction::new()));
         values_map.insert("clock".into(), function_value);
         Self { values: values_map, enclosing: None }
+    }
+
+    pub fn new() -> Self {
+        Self { values: HashMap::new(), enclosing: None }
     }
 
     pub fn new_with_enclosing(env: &Environment) -> Self {

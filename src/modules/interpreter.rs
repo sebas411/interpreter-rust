@@ -1,10 +1,11 @@
 use std::rc::Rc;
-use crate::{modules::{callable::LoxCallable, environment::Environment, errors::{LoxError, RuntimeError}, expressions::Expr, statements::Stmt, value::Value, visitor::{ExprVisitor, StmtVisitor}}, runtime_error};
+use crate::{modules::{callable::{LoxCallable, LoxFunction}, environment::Environment, errors::{LoxError, RuntimeError}, expressions::Expr, statements::Stmt, token::Token, value::Value, visitor::{ExprVisitor, StmtVisitor}}, runtime_error};
 
 type Result<T> = std::result::Result<T, Box<dyn LoxError>>;
 
 pub struct Interpreter {
-    environment: Environment
+    environment: Environment,
+    globals: Environment,
 }
 
 impl ExprVisitor for Interpreter {
@@ -77,6 +78,10 @@ impl ExprVisitor for Interpreter {
     }
     fn visit_variable(&self, expr: &Expr) -> Result<Value> {
         if let Expr::Variable(name) = expr {
+            let global_res = self.globals.get(name);
+            if global_res.is_ok() {
+                return global_res
+            }
             return self.environment.get(name);
         }
         Err(Box::new(RuntimeError::new(None, "Unknown runtime error")))
@@ -107,10 +112,10 @@ impl ExprVisitor for Interpreter {
 
             let arguments = arguments.iter().map(|argument| self.evaluate(argument)).collect::<Result<Vec<Value>>>()?;
 
-            let function = self.get_callable(&callee)?;
+            let function = self.get_callable(&callee, paren)?;
             return function.call(self, arguments);
         }
-        Err(Box::new(RuntimeError::new(None, "Unknown runtime error")))
+        Err(Box::new(RuntimeError::new(None, "Can only call functions and classes.")))
     }
 }
 
@@ -170,18 +175,30 @@ impl StmtVisitor for Interpreter {
         }
         Ok(())
     }
+    fn visit_function_statement(&mut self, stmt: &Stmt) -> Result<()> {
+        if let Stmt::Function { name, .. } = stmt {
+            let function = LoxFunction::new(stmt);
+            let function_value = Value::Function(Rc::new(function));
+            self.environment.define(&name.lexeme, &function_value);
+        }
+        Ok(())
+    }
 }
 
 impl Interpreter {
     pub fn new() -> Self {
-        Self {environment: Environment::new()}
+        Self {environment: Environment::new(), globals: Environment::new_globals()}
     }
 
-    fn get_callable(&self, value: &Value) -> Result<Rc<dyn LoxCallable>> {
+    pub fn get_global(&self) -> Environment {
+        self.globals.clone()
+    } 
+
+    fn get_callable(&self, value: &Value, paren: &Token) -> Result<Rc<dyn LoxCallable>> {
         if let Value::Function(function) = value {
             return Ok(function.clone())
         }
-        Err(Box::new(RuntimeError::new(None, "Unable to get function")))
+        Err(Box::new(RuntimeError::new(Some(paren.clone()), "Can only call functions and classes.")))
     }
 
     pub fn interpret(&mut self, statements: Vec<Stmt>) {
@@ -216,7 +233,7 @@ impl Interpreter {
         expr.accept(self)
     }
 
-    fn execute_block(&mut self, statements: Vec<Stmt>, environment: Environment) -> Result<()> {
+    pub fn execute_block(&mut self, statements: Vec<Stmt>, environment: Environment) -> Result<()> {
         let previous = self.environment.clone();
 
         self.environment = environment;

@@ -5,6 +5,11 @@ type Result<T> = std::result::Result<T, Box<dyn LoxError>>;
 #[derive(Clone, Debug)]
 pub enum Stmt {
     Expression(Expr),
+    Function {
+        name: Token,
+        params: Vec<Token>,
+        body: Vec<Stmt>,
+    },
     Print(Expr),
     Var{
         name: Token,
@@ -45,6 +50,9 @@ impl Stmt {
             Stmt::While { .. } => {
                 visitor.visit_while_statement(self)
             },
+            Stmt::Function { .. } => {
+                visitor.visit_function_statement(self)
+            }
         }
     }
 }
