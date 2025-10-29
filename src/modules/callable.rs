@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, rc::Rc};
 
 use crate::modules::{environment::Environment, errors::LoxError, interpreter::Interpreter, statements::Stmt, token::Token, value::Value};
 use chrono::prelude::Utc;
@@ -11,7 +11,7 @@ pub trait LoxCallable: Debug {
     fn to_string(&self) -> String;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LoxFunction {
     body: Vec<Stmt>,
     params: Vec<Token>,
@@ -32,13 +32,15 @@ impl LoxCallable for LoxFunction {
     fn arity(&self) -> usize {
         self.params.len()
     }
-    fn call(&self, interpreter: &mut Interpreter, arguments: Vec<Value>) -> Result<Value> {
-        let my_interpreter = interpreter;
-        let mut environment = Environment::new_with_enclosing(&(my_interpreter.get_environment()));
+    fn call(&self, _interpreter: &mut Interpreter, arguments: Vec<Value>) -> Result<Value> {
+        let mut interpreter = Interpreter::new();
+        let mut environment = Environment::new_with_enclosing(&self.closure);
+        let self_function = self.clone();
         for i in 0..self.params.len() {
             environment.define(&self.params[i].lexeme, &arguments[i]);
         }
-        let result = my_interpreter.execute_block(self.body.clone(), environment);
+        environment.define(&self.name.lexeme, &Value::Function(Rc::new(self_function)));
+        let result = interpreter.execute_block(self.body.clone(), environment);
         // self.closure = environment;
         match result {
             Err(e) => {
