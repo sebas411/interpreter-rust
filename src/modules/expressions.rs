@@ -27,6 +27,11 @@ pub enum Expr {
         operator: Token,
         right: Box<Expr>,
     },
+    Call {
+        callee: Box<Expr>,
+        paren: Token,
+        arguments: Vec<Expr>,
+    }
 }
 
 impl Expr {
@@ -53,6 +58,9 @@ impl Expr {
             Expr::Logical { .. } => {
                 visitor.visit_logical(self)
             },
+            Expr::Call { .. } => {
+                visitor.visit_call(self)
+            }
         }
     }
 }

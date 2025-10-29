@@ -1,4 +1,5 @@
-use crate::{modules::{environment::Environment, errors::{LoxError, RuntimeError}, expressions::Expr, statements::Stmt, value::Value, visitor::{ExprVisitor, StmtVisitor}}, runtime_error};
+use std::rc::Rc;
+use crate::{modules::{callable::{LoxCallable, UserFunction}, environment::Environment, errors::{LoxError, RuntimeError}, expressions::Expr, statements::Stmt, value::Value, visitor::{ExprVisitor, StmtVisitor}}, runtime_error};
 
 type Result<T> = std::result::Result<T, Box<dyn LoxError>>;
 
@@ -100,6 +101,17 @@ impl ExprVisitor for Interpreter {
         }
         Err(Box::new(RuntimeError::new(None, "Unknown runtime error")))
     }
+    fn visit_call(&mut self, expr: &Expr) -> Result<Value> {
+        if let Expr::Call { callee, paren, arguments } = expr {
+            let callee = self.evaluate(callee)?;
+
+            let arguments = arguments.iter().map(|argument| self.evaluate(argument)).collect::<Result<Vec<Value>>>()?;
+
+            let function = self.get_callable(&callee)?;
+            return function.call(self, arguments);
+        }
+        Err(Box::new(RuntimeError::new(None, "Unknown runtime error")))
+    }
 }
 
 impl StmtVisitor for Interpreter {
@@ -163,6 +175,14 @@ impl StmtVisitor for Interpreter {
 impl Interpreter {
     pub fn new() -> Self {
         Self {environment: Environment::new()}
+    }
+
+    fn get_callable(&self, value: &Value) -> Result<Rc<dyn LoxCallable>> {
+        if let Value::FunctionName(name) = value {
+            let function = self.environment.get_function(name)?;
+            return Ok(function)
+        }
+        Err(Box::new(RuntimeError::new(None, "Unable to get function")))
     }
 
     pub fn interpret(&mut self, statements: Vec<Stmt>) {

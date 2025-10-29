@@ -94,6 +94,7 @@ pub enum Value {
     Str(String),
     Bool(bool),
     Nil,
+    FunctionName(String),
 }
 
 impl Value {
@@ -127,6 +128,7 @@ impl fmt::Display for Value {
             Value::Str(s)    => write!(f, "{}", s),
             Value::Bool(b)   => write!(f, "{}", b),
             Value::Nil       => write!(f, "nil"),
+            Value::FunctionName(s) => write!(f, "{}", s),
         }
     }
 }

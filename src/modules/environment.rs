@@ -1,25 +1,34 @@
-use crate::modules::{errors::{LoxError, RuntimeError}, token::Token, value::Value};
-use std::collections::HashMap;
+use crate::modules::{callable::{ClockFunction, LoxCallable}, errors::{LoxError, RuntimeError}, token::Token, value::Value};
+use std::{collections::HashMap, rc::Rc};
 
 type Result<T> = std::result::Result<T, Box<dyn LoxError>>;
 
 #[derive(Debug, Clone)]
 pub struct Environment {
     values: HashMap<String, Value>,
+    functions: HashMap<String, Rc<dyn LoxCallable>>,
     enclosing: Option<Box<Environment>>,
 }
 
 impl Environment {
     pub fn new() -> Self {
-        Self { values: HashMap::new(), enclosing: None }
+        let mut functions_map: HashMap<String, Rc<dyn LoxCallable>> = HashMap::new();
+        functions_map.insert("clock".into(), Rc::new(ClockFunction::new()));
+        let mut values_map: HashMap<String, Value> = HashMap::new();
+        values_map.insert("clock".into(), Value::FunctionName("clock".into()));
+        Self { values: values_map, functions: functions_map, enclosing: None }
     }
 
     pub fn new_with_enclosing(env: &Environment) -> Self {
-        Self { values: HashMap::new(), enclosing: Some(Box::new(env.clone())) }
+        Self { values: HashMap::new(), functions: HashMap::new(), enclosing: Some(Box::new(env.clone())) }
     }
 
     pub fn define(&mut self, name: &str, value: &Value) {
         self.values.insert(name.into(), value.clone());
+    }
+
+    pub fn define_function(&mut self, name: &str, value: Rc<dyn LoxCallable>) {
+        self.functions.insert(name.into(), value);
     }
 
     pub fn assign(&mut self, name: &Token, value: &Value) -> Result<()> {
@@ -43,6 +52,17 @@ impl Environment {
             return enclosing.get(name)
         }
         let err = RuntimeError::new(Some(name.clone()), &format!("Undefined variable '{}'.", name.lexeme));
+        Err(Box::new(err))
+    }
+
+    pub fn get_function(&self, name: &str) -> Result<Rc<dyn LoxCallable>> {
+        if self.functions.contains_key(name) {
+            return Ok(self.functions.get(name).unwrap().clone())
+        }
+        if let Some(enclosing) = &self.enclosing {
+            return enclosing.get_function(name)
+        }
+        let err = RuntimeError::new(None, &format!("Undefined variable '{}'.", name));
         Err(Box::new(err))
     }
 

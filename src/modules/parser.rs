@@ -157,7 +157,36 @@ impl Parser {
             let right = self.unary()?;
             return Ok(Expr::Unary { operator, right: Box::new(right) })
         }
-        self.primary()
+        self.call()
+    }
+
+    fn call(&mut self) -> Result<Expr> {
+        let mut expr = self.primary()?;
+
+        loop {
+            if self.match_type(vec!["LEFT_PAREN"]) {
+                expr = self.finish_call(expr)?;
+            } else {
+                break;
+            }
+        }
+
+        Ok(expr)
+    }
+
+    fn finish_call(&mut self, callee: Expr) -> Result<Expr> {
+        let mut arguments = vec![];
+        if !self.check("RIGHT_PAREN") {
+            arguments.push(self.expression()?);
+            while self.match_type(vec!["COMMA"]) {
+                if arguments.len() >= 255 {
+                    self.error(self.peek(), "Can't have more than 255 arguments.");
+                }
+                arguments.push(self.expression()?);
+            }
+        }
+        let paren = self.consume("RIGHT_PAREN", "Expect ')' after arguments.")?;
+        Ok(Expr::Call { callee: Box::new(callee), paren, arguments })
     }
 
     fn primary(&mut self) -> Result<Expr> {
@@ -273,7 +302,7 @@ impl Parser {
         if let Some(initializer) = initializer {
             body = Stmt::Block { statements: vec![initializer, body] };
         }
-        
+
         Ok(body)
     }
 

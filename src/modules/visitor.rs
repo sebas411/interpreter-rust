@@ -10,6 +10,7 @@ pub trait ExprVisitor {
     fn visit_variable(&self, expr: &Expr) -> Result<Value>;
     fn visit_asign(&mut self, expr: &Expr) -> Result<Value>;
     fn visit_logical(&mut self, expr: &Expr) -> Result<Value>;
+    fn visit_call(&mut self, expr: &Expr) -> Result<Value>;
 }
 
 pub trait StmtVisitor {
@@ -65,6 +66,9 @@ impl ExprVisitor for AstPrinter {
         if let Expr::Logical { left, operator, right } = expr {
             return Ok(Value::Str(self.parenthesize(&operator.lexeme, vec![left, &right])?));
         }
+        Err(Box::new(PrintError::new()))
+    }
+    fn visit_call(&mut self, _: &Expr) -> Result<Value> {
         Err(Box::new(PrintError::new()))
     }
 }
