@@ -11,6 +11,10 @@ pub enum Stmt {
         body: Vec<Stmt>,
     },
     Print(Expr),
+    Return {
+        keyword: Token,
+        value: Option<Expr>,
+    },
     Var{
         name: Token,
         initializer: Option<Expr>,
@@ -52,7 +56,10 @@ impl Stmt {
             },
             Stmt::Function { .. } => {
                 visitor.visit_function_statement(self)
-            }
+            },
+            Stmt::Return { .. } => {
+                visitor.visit_return_statement(self)
+            },
         }
     }
 }

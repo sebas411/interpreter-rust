@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use crate::{modules::{callable::{LoxCallable, LoxFunction}, environment::Environment, errors::{LoxError, RuntimeError}, expressions::Expr, statements::Stmt, token::Token, value::Value, visitor::{ExprVisitor, StmtVisitor}}, runtime_error};
+use crate::{modules::{callable::{LoxCallable, LoxFunction}, environment::Environment, errors::{LoxError, ReturnError, RuntimeError}, expressions::Expr, statements::Stmt, token::Token, value::Value, visitor::{ExprVisitor, StmtVisitor}}, runtime_error};
 
 type Result<T> = std::result::Result<T, Box<dyn LoxError>>;
 
@@ -78,10 +78,6 @@ impl ExprVisitor for Interpreter {
     }
     fn visit_variable(&self, expr: &Expr) -> Result<Value> {
         if let Expr::Variable(name) = expr {
-            let global_res = self.globals.get(name);
-            if global_res.is_ok() {
-                return global_res
-            }
             return self.environment.get(name);
         }
         Err(Box::new(RuntimeError::new(None, "Unknown runtime error")))
@@ -177,9 +173,20 @@ impl StmtVisitor for Interpreter {
     }
     fn visit_function_statement(&mut self, stmt: &Stmt) -> Result<()> {
         if let Stmt::Function { name, .. } = stmt {
-            let function = LoxFunction::new(stmt);
+            let function = LoxFunction::new(stmt, self.environment.clone());
             let function_value = Value::Function(Rc::new(function));
             self.environment.define(&name.lexeme, &function_value);
+        }
+        Ok(())
+    }
+    fn visit_return_statement(&mut self, stmt: &Stmt) -> Result<()> {
+        if let Stmt::Return { keyword: _, value } = stmt {
+            let mut return_value = Value::Nil;
+            if let Some(value) = value {
+                return_value = self.evaluate(value)?;
+            }
+            let return_error = ReturnError::new(return_value);
+            return Err(Box::new(return_error))
         }
         Ok(())
     }
@@ -187,12 +194,17 @@ impl StmtVisitor for Interpreter {
 
 impl Interpreter {
     pub fn new() -> Self {
-        Self {environment: Environment::new(), globals: Environment::new_globals()}
+        let globals = Environment::new_globals();
+        Self {environment: globals.clone(), globals}
     }
 
     pub fn get_global(&self) -> Environment {
         self.globals.clone()
     } 
+
+    pub fn get_environment(&self) -> Environment {
+        self.environment.clone()
+    }
 
     fn get_callable(&self, value: &Value, paren: &Token) -> Result<Rc<dyn LoxCallable>> {
         if let Value::Function(function) = value {

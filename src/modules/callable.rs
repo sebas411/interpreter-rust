@@ -16,14 +16,15 @@ pub struct LoxFunction {
     body: Vec<Stmt>,
     params: Vec<Token>,
     name: Token,
+    closure: Environment,
 }
 
 impl LoxFunction {
-    pub fn new(declaration: &Stmt) -> Self {
+    pub fn new(declaration: &Stmt, closure: Environment) -> Self {
         if let Stmt::Function { name, params, body } = declaration.clone() {
-            return Self { body, params, name }
+            return Self { body, params, name, closure: closure.clone() }
         }
-        Self { body: vec![], params: vec![], name: Token { token_type: "IDENTIFIER".into(), lexeme: "".into(), literal: "".into(), line: 0 } }
+        Self { body: vec![], params: vec![], name: Token { token_type: "IDENTIFIER".into(), lexeme: "".into(), literal: "".into(), line: 0 }, closure: Environment::new() }
     }
 }
 
@@ -32,11 +33,23 @@ impl LoxCallable for LoxFunction {
         self.params.len()
     }
     fn call(&self, interpreter: &mut Interpreter, arguments: Vec<Value>) -> Result<Value> {
-        let mut environment = Environment::new_with_enclosing(&interpreter.get_global());
+        let my_interpreter = interpreter;
+        let mut environment = Environment::new_with_enclosing(&(my_interpreter.get_environment()));
         for i in 0..self.params.len() {
             environment.define(&self.params[i].lexeme, &arguments[i]);
         }
-        interpreter.execute_block(self.body.clone(), environment)?;
+        let result = my_interpreter.execute_block(self.body.clone(), environment);
+        // self.closure = environment;
+        match result {
+            Err(e) => {
+                if e.error_type() == "ReturnError" {
+                    return Ok(e.get_value())
+                } else {
+                    return Err(e)
+                }
+            },
+            Ok(()) => (),
+        }
         Ok(Value::Nil)
     }
     fn to_string(&self) -> String {

@@ -271,6 +271,9 @@ impl Parser {
         if self.match_type(vec!["IF"]) {
             return self.if_statement()
         }
+        if self.match_type(vec!["RETURN"]) {
+            return self.return_statement()
+        }
         if self.match_type(vec!["WHILE"]) {
             return self.while_statement()
         }
@@ -278,6 +281,16 @@ impl Parser {
             return self.for_statement()
         }
         self.expression_statement()
+    }
+
+    fn return_statement(&mut self) -> Result<Stmt> {
+        let keyword = self.previous();
+        let mut value = None;
+        if !self.check("SEMICOLON") {
+            value = Some(self.expression()?);
+        }
+        self.consume("SEMICOLON", "Expect ';' after return value.")?;
+        Ok(Stmt::Return { keyword, value })
     }
 
     fn for_statement(&mut self) -> Result<Stmt> {
