@@ -1,4 +1,4 @@
-use std::{fmt::Debug, rc::Rc};
+use std::{fmt::Debug, rc::Rc, sync::RwLock};
 
 use crate::modules::{environment::Environment, errors::LoxError, interpreter::Interpreter, statements::Stmt, token::Token, value::Value};
 use chrono::prelude::Utc;
@@ -16,15 +16,15 @@ pub struct LoxFunction {
     body: Vec<Stmt>,
     params: Vec<Token>,
     name: Token,
-    closure: Environment,
+    closure: Rc<RwLock<Environment>>,
 }
 
 impl LoxFunction {
-    pub fn new(declaration: &Stmt, closure: Environment) -> Self {
+    pub fn new(declaration: &Stmt, closure: Rc<RwLock<Environment>>) -> Self {
         if let Stmt::Function { name, params, body } = declaration.clone() {
-            return Self { body, params, name, closure: closure.clone() }
+            return Self { body, params, name, closure: closure }
         }
-        Self { body: vec![], params: vec![], name: Token { token_type: "IDENTIFIER".into(), lexeme: "".into(), literal: "".into(), line: 0 }, closure: Environment::new() }
+        Self { body: vec![], params: vec![], name: Token { token_type: "IDENTIFIER".into(), lexeme: "".into(), literal: "".into(), line: 0 }, closure: Rc::new(RwLock::new(Environment::new())) }
     }
 }
 
@@ -32,16 +32,18 @@ impl LoxCallable for LoxFunction {
     fn arity(&self) -> usize {
         self.params.len()
     }
-    fn call(&self, _interpreter: &mut Interpreter, arguments: Vec<Value>) -> Result<Value> {
-        let mut interpreter = Interpreter::new();
-        let mut environment = Environment::new_with_enclosing(&self.closure);
-        let self_function = self.clone();
+    fn call(&self, interpreter: &mut Interpreter, arguments: Vec<Value>) -> Result<Value> {
+        //set environment for function
+        let environment = Rc::new(RwLock::new(Environment::new_with_enclosing(self.closure.clone())));
+
+        // add arguments
         for i in 0..self.params.len() {
-            environment.define(&self.params[i].lexeme, &arguments[i]);
+            environment.write().unwrap().define(&self.params[i].lexeme, &arguments[i]);
         }
-        environment.define(&self.name.lexeme, &Value::Function(Rc::new(self_function)));
+        // run function
         let result = interpreter.execute_block(self.body.clone(), environment);
-        // self.closure = environment;
+
+
         match result {
             Err(e) => {
                 if e.error_type() == "ReturnError" {

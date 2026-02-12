@@ -1,12 +1,12 @@
 use crate::modules::{callable::ClockFunction, errors::{LoxError, RuntimeError}, token::Token, value::Value};
-use std::{collections::HashMap, rc::Rc};
+use std::{collections::HashMap, rc::Rc, sync::RwLock};
 
 type Result<T> = std::result::Result<T, Box<dyn LoxError>>;
 
 #[derive(Debug, Clone)]
 pub struct Environment {
     values: HashMap<String, Value>,
-    enclosing: Option<Box<Environment>>,
+    enclosing: Option<Rc<RwLock<Environment>>>,
 }
 
 impl Environment {
@@ -21,8 +21,8 @@ impl Environment {
         Self { values: HashMap::new(), enclosing: None }
     }
 
-    pub fn new_with_enclosing(env: &Environment) -> Self {
-        Self { values: HashMap::new(), enclosing: Some(Box::new(env.clone())) }
+    pub fn new_with_enclosing(env: Rc<RwLock<Environment>>) -> Self {
+        Self { values: HashMap::new(), enclosing: Some(env) }
     }
 
     pub fn define(&mut self, name: &str, value: &Value) {
@@ -36,7 +36,7 @@ impl Environment {
         }
 
         if let Some(enclosing) = &mut self.enclosing {
-            return enclosing.assign(name, value)
+            return enclosing.write().unwrap().assign(name, value)
         }
 
         Err(Box::new(RuntimeError::new(Some(name.clone()), &format!("Undefined variable '{}'.", name.lexeme))))
@@ -47,16 +47,19 @@ impl Environment {
             return Ok(self.values.get(&name.lexeme).unwrap().clone())
         }
         if let Some(enclosing) = &self.enclosing {
-            return enclosing.get(name)
+            return enclosing.read().unwrap().get(name)
         }
         let err = RuntimeError::new(Some(name.clone()), &format!("Undefined variable '{}'.", name.lexeme));
         Err(Box::new(err))
     }
 
-    pub fn get_parent(&self) -> Environment {
-        if let Some(env) = &self.enclosing {
-            return *env.clone();
+    pub fn contains(&self, key: &str) -> bool {
+        if self.values.contains_key(key) {
+            true
+        } else if let Some(enclosing) = &self.enclosing {
+            enclosing.read().unwrap().contains(key)
+        } else {
+            false
         }
-        return Environment::new();
     }
 }

@@ -1,11 +1,10 @@
-use std::rc::Rc;
+use std::{rc::Rc, sync::RwLock};
 use crate::{modules::{callable::{LoxCallable, LoxFunction}, environment::Environment, errors::{LoxError, ReturnError, RuntimeError}, expressions::Expr, statements::Stmt, token::Token, value::Value, visitor::{ExprVisitor, StmtVisitor}}, runtime_error};
 
 type Result<T> = std::result::Result<T, Box<dyn LoxError>>;
 
 pub struct Interpreter {
-    environment: Environment,
-    globals: Environment,
+    environment: Rc<RwLock<Environment>>,
 }
 
 impl ExprVisitor for Interpreter {
@@ -78,14 +77,14 @@ impl ExprVisitor for Interpreter {
     }
     fn visit_variable(&self, expr: &Expr) -> Result<Value> {
         if let Expr::Variable(name) = expr {
-            return self.environment.get(name);
+            return self.environment.read().unwrap().get(name);
         }
         Err(Box::new(RuntimeError::new(None, "Unknown runtime error")))
     }
     fn visit_asign(&mut self, expr: &Expr) -> Result<Value> {
         if let Expr::Assign { name, value } = expr {
             let value = self.evaluate(value)?;
-            self.environment.assign(name, &value)?;
+            self.environment.write().unwrap().assign(name, &value)?;
             return Ok(value)
         }
         Err(Box::new(RuntimeError::new(None, "Unknown runtime error")))
@@ -143,14 +142,13 @@ impl StmtVisitor for Interpreter {
             if let Some(init) = initializer {
                 value = self.evaluate(init)?;
             }
-
-            self.environment.define(&name.lexeme, &value);
+            self.environment.write().unwrap().define(&name.lexeme, &value);
         }
         Ok(())
     }
     fn visit_block(&mut self, stmt: &Stmt) -> Result<()> {
         if let Stmt::Block { statements } = stmt {
-            self.execute_block(statements.to_vec(), Environment::new_with_enclosing(&self.environment))?;
+            self.execute_block(statements.to_vec(), Rc::new(RwLock::new(Environment::new_with_enclosing(self.environment.clone()))))?;
         }
         Ok(())
     }
@@ -179,7 +177,7 @@ impl StmtVisitor for Interpreter {
         if let Stmt::Function { name, .. } = stmt {
             let function = LoxFunction::new(stmt, self.environment.clone());
             let function_value = Value::Function(Rc::new(function));
-            self.environment.define(&name.lexeme, &function_value);
+            self.environment.write().unwrap().define(&name.lexeme, &function_value);
         }
         Ok(())
     }
@@ -198,16 +196,8 @@ impl StmtVisitor for Interpreter {
 
 impl Interpreter {
     pub fn new() -> Self {
-        let globals = Environment::new_globals();
-        Self {environment: globals.clone(), globals}
-    }
-
-    pub fn get_global(&self) -> Environment {
-        self.globals.clone()
-    } 
-
-    pub fn get_environment(&self) -> Environment {
-        self.environment.clone()
+        let globals = Rc::new(RwLock::new(Environment::new_globals()));
+        Self { environment: globals }
     }
 
     fn get_callable(&self, value: &Value, paren: &Token) -> Result<Rc<dyn LoxCallable>> {
@@ -249,7 +239,7 @@ impl Interpreter {
         expr.accept(self)
     }
 
-    pub fn execute_block(&mut self, statements: Vec<Stmt>, environment: Environment) -> Result<()> {
+    pub fn execute_block(&mut self, statements: Vec<Stmt>, environment: Rc<RwLock<Environment>>) -> Result<()> {
         let previous = self.environment.clone();
 
         self.environment = environment;
@@ -260,8 +250,6 @@ impl Interpreter {
                 return Err(e)
             }
         }
-
-        let previous = self.environment.get_parent();
 
         self.environment = previous;
         Ok(())
