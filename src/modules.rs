@@ -9,3 +9,4 @@ pub mod errors;
 pub mod statements;
 pub mod environment;
 pub mod callable;
+pub mod resolver;

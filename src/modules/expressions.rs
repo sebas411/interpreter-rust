@@ -2,7 +2,7 @@ use crate::modules::{errors::LoxError, token::Token, value::Value, visitor::Expr
 
 type Result<T> = std::result::Result<T, Box<dyn LoxError>>;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub enum Expr {
     Unary {
         operator: Token,

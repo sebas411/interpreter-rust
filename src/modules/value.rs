@@ -1,4 +1,4 @@
-use std::{fmt, ops::{Add, Div, Mul, Neg, Sub}, rc::Rc};
+use std::{fmt, hash::{Hash, Hasher}, ops::{Add, Div, Mul, Neg, Sub}, rc::Rc};
 
 use crate::modules::callable::LoxCallable;
 
@@ -49,6 +49,12 @@ impl PartialEq for Number {
 }
 
 impl Eq for Number {}
+
+impl Hash for Number {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.hash(state);
+    }
+}
 
 impl PartialOrd for Number {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
@@ -147,3 +153,16 @@ impl PartialEq for Value {
     }
 }
 
+impl Eq for Value {}
+
+impl Hash for Value {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            Self::Bool(b) => b.hash(state),
+            Self::Function(rc) => Rc::as_ptr(rc).hash(state),
+            Self::Nil => state.write_u8(0),
+            Self::Num(n) => n.hash(state),
+            Self::Str(s) => s.hash(state),
+        }
+    }
+}

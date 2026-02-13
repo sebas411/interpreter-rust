@@ -1,10 +1,11 @@
-use std::{rc::Rc, sync::RwLock};
+use std::{collections::HashMap, rc::Rc, sync::RwLock};
 use crate::{modules::{callable::{LoxCallable, LoxFunction}, environment::Environment, errors::{LoxError, ReturnError, RuntimeError}, expressions::Expr, statements::Stmt, token::Token, value::Value, visitor::{ExprVisitor, StmtVisitor}}, runtime_error};
 
 type Result<T> = std::result::Result<T, Box<dyn LoxError>>;
 
 pub struct Interpreter {
     environment: Rc<RwLock<Environment>>,
+    locals: HashMap<Expr, u8>,
 }
 
 impl ExprVisitor for Interpreter {
@@ -75,7 +76,7 @@ impl ExprVisitor for Interpreter {
         }
         Err(Box::new(RuntimeError::new(None, "Unknown runtime error")))
     }
-    fn visit_variable(&self, expr: &Expr) -> Result<Value> {
+    fn visit_variable(&mut self, expr: &Expr) -> Result<Value> {
         if let Expr::Variable(name) = expr {
             return self.environment.read().unwrap().get(name);
         }
@@ -197,7 +198,7 @@ impl StmtVisitor for Interpreter {
 impl Interpreter {
     pub fn new() -> Self {
         let globals = Rc::new(RwLock::new(Environment::new_globals()));
-        Self { environment: globals }
+        Self { environment: globals, locals: HashMap::new() }
     }
 
     fn get_callable(&self, value: &Value, paren: &Token) -> Result<Rc<dyn LoxCallable>> {
@@ -205,6 +206,10 @@ impl Interpreter {
             return Ok(function.clone())
         }
         Err(Box::new(RuntimeError::new(Some(paren.clone()), "Can only call functions and classes.")))
+    }
+
+    pub fn resolve(&mut self, expr: &Expr, depth: u8) {
+        self.locals.insert(expr.clone(), depth);
     }
 
     pub fn interpret(&mut self, statements: Vec<Stmt>) {

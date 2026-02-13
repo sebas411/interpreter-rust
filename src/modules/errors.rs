@@ -57,6 +57,37 @@ impl LoxError for RuntimeError {
 }
 
 
+pub struct ResolverError {
+    _token: Option<Token>,
+    message: String,
+}
+
+impl LoxError for ResolverError {
+    fn error_type(&self) -> String {
+        "ResolverError".to_string()
+    }
+    fn get_value(&self) -> Value {
+        Value::Nil
+    }
+}
+
+impl fmt::Display for ResolverError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
+impl ResolverError {
+    pub fn new() -> Self {
+        Self { message: "Error resolving variables.".to_string(), _token: None }
+    }
+
+    pub fn new_with_values(token: Token, message: &str) -> Self {
+        Self { _token: Some(token), message: message.to_string() }
+    }
+}
+
+
 pub struct PrintError {}
 
 impl LoxError for PrintError {

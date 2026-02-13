@@ -7,7 +7,7 @@ pub trait ExprVisitor {
     fn visit_unary(&mut self, expr: &Expr) -> Result<Value>;
     fn visit_literal(&self, expr: &Expr) -> Result<Value>;
     fn visit_grouping(&mut self, expr: &Expr) -> Result<Value>;
-    fn visit_variable(&self, expr: &Expr) -> Result<Value>;
+    fn visit_variable(&mut self, expr: &Expr) -> Result<Value>;
     fn visit_asign(&mut self, expr: &Expr) -> Result<Value>;
     fn visit_logical(&mut self, expr: &Expr) -> Result<Value>;
     fn visit_call(&mut self, expr: &Expr) -> Result<Value>;
@@ -55,7 +55,7 @@ impl ExprVisitor for AstPrinter {
         }
         Err(Box::new(PrintError::new()))
     }
-    fn visit_variable(&self, expr: &Expr) -> Result<Value> {
+    fn visit_variable(&mut self, expr: &Expr) -> Result<Value> {
         if let Expr::Variable(name) = expr {
             return Ok(Value::Str(name.lexeme.clone()))
         }
