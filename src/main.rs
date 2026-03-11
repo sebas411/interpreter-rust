@@ -5,6 +5,7 @@ use std::process;
 use lox_interpreter::has_error;
 use lox_interpreter::has_runtime_error;
 use lox_interpreter::modules::interpreter::Interpreter;
+use lox_interpreter::modules::resolver::Resolver;
 use lox_interpreter::modules::scanner::Scanner;
 use lox_interpreter::modules::parser::Parser;
 use lox_interpreter::modules::token::Token;
@@ -20,8 +21,10 @@ fn run(source: &str) {
     let tokens = scan(source);
 
     let mut parser = Parser::new(tokens);
-    if let Some(statements) = parser.parse() {
+    if let Some(mut statements) = parser.parse() {
         let mut interpreter = Interpreter::new();
+        let mut resolver = Resolver::new();
+        resolver.resolve_multi(&mut statements).unwrap();
         interpreter.interpret(statements);
     }
 }

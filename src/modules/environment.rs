@@ -34,23 +34,14 @@ impl Environment {
             self.values.insert(name.lexeme.clone(), value.clone());
             return Ok(())
         }
-
-        if let Some(enclosing) = &mut self.enclosing {
-            return enclosing.write().unwrap().assign(name, value)
-        }
-
-        Err(Box::new(RuntimeError::new(Some(name.clone()), &format!("Undefined variable '{}'.", name.lexeme))))
+        Err(Box::new(RuntimeError::new(Some(name.clone()), &format!("Undefined variable '{}'. Line {}", name.lexeme, name.line))))
     }
 
     pub fn get(&self, name: &Token) -> Result<Value> {
         if self.values.contains_key(&name.lexeme) {
             return Ok(self.values.get(&name.lexeme).unwrap().clone())
         }
-        if let Some(enclosing) = &self.enclosing {
-            return enclosing.read().unwrap().get(name)
-        }
-        let err = RuntimeError::new(Some(name.clone()), &format!("Undefined variable '{}'.", name.lexeme));
-        Err(Box::new(err))
+        Err(Box::new(RuntimeError::new(Some(name.clone()), &format!("Undefined variable '{}'. Line {}", name.lexeme, name.line))))
     }
 
     pub fn contains(&self, key: &str) -> bool {
@@ -61,5 +52,32 @@ impl Environment {
         } else {
             false
         }
+    }
+
+    pub fn get_at(&self, distance: usize, name: &Token) -> Result<Value> {
+        if distance == 0 {
+            self.get(name)
+        } else {
+            self.ancestor(distance).unwrap().read().unwrap().get(name)
+        }
+    }
+
+    pub fn assign_at(&mut self, distance: usize, name: &Token, value: &Value) -> Result<()> {
+        match distance {
+            0 => self.assign(name, value),
+            _ => self.ancestor(distance).unwrap().write().unwrap().assign(name, value),
+        }
+    }
+
+    fn ancestor(&self, distance: usize) -> Option<Rc<RwLock<Environment>>> {
+        if distance == 0 {
+            return None
+        }
+        let mut environment = self.enclosing.clone()?;
+        for _ in 1..distance {
+            let temp = environment.read().unwrap().enclosing.clone()?;
+            environment = temp;
+        }
+        Some(environment)
     }
 }

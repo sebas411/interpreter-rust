@@ -67,100 +67,100 @@ impl Parser {
 
     // Expression generators
 
-    fn expression(&mut self) -> Result<Expr> {
+    fn expression(&mut self) -> Result<Box<Expr>> {
         self.assignment()
     }
 
-    fn assignment(&mut self) -> Result<Expr> {
+    fn assignment(&mut self) -> Result<Box<Expr>> {
         let expr = self.logic_or()?;
         if self.match_type(vec!["EQUAL"]) {
             let equals = self.previous();
             let value = self.assignment()?;
 
-            if let Expr::Variable(name) = expr {
-                return Ok(Expr::Assign { name: name, value: Box::new(value) })
+            if let Expr::Variable { name, distance: _ } = expr.as_ref() {
+                return Ok(Box::new(Expr::Assign { name: name.clone(), value: value, distance: None }))
             }
             self.error(equals, "Invalid assignment target.");
         }
         Ok(expr)
     }
 
-    fn logic_or(&mut self) -> Result<Expr> {
+    fn logic_or(&mut self) -> Result<Box<Expr>> {
         let expr = self.logic_and()?;
         if self.match_type(vec!["OR"]) {
             let or_token = self.previous();
             let left = expr;
             let right = self.logic_or()?;
-            return Ok(Expr::Logical { left: Box::new(left), operator: or_token, right: Box::new(right) })
+            return Ok(Box::new(Expr::Logical { left: left, operator: or_token, right: right }))
         }
         Ok(expr)
     }
 
-    fn logic_and(&mut self) -> Result<Expr> {
+    fn logic_and(&mut self) -> Result<Box<Expr>> {
         let expr = self.equality()?;
         if self.match_type(vec!["AND"]) {
             let and_token = self.previous();
             let left = expr;
             let right = self.logic_and()?;
-            return Ok(Expr::Logical { left: Box::new(left), operator: and_token, right: Box::new(right) })
+            return Ok(Box::new(Expr::Logical { left, operator: and_token, right }))
         }
         Ok(expr)
     }
 
-    fn equality(&mut self) -> Result<Expr> {
+    fn equality(&mut self) -> Result<Box<Expr>> {
         let mut current_expr = self.comparison()?;
         while self.match_type(vec!["BANG_EQUAL", "EQUAL_EQUAL"]) {
             let first = current_expr;
             let operator = self.previous();
             let second = self.comparison()?;
-            current_expr = Expr::Binary { left: Box::new(first), operator , right: Box::new(second) };
+            current_expr = Box::new(Expr::Binary { left: first, operator , right: second });
         }
         return Ok(current_expr);
     }
 
-    fn comparison(&mut self) -> Result<Expr> {
+    fn comparison(&mut self) -> Result<Box<Expr>> {
         let mut current_expr = self.term()?;
         while self.match_type(vec!["GREATER", "GREATER_EQUAL", "LESS", "LESS_EQUAL"]) {
             let first = current_expr;
             let operator = self.previous();
             let second = self.term()?;
-            current_expr = Expr::Binary { left: Box::new(first), operator , right: Box::new(second) };
+            current_expr = Box::new(Expr::Binary { left: first, operator , right: second });
         }
         return Ok(current_expr);
     }
 
-    fn term(&mut self) -> Result<Expr> {
+    fn term(&mut self) -> Result<Box<Expr>> {
         let mut current_expr = self.factor()?;
         while self.match_type(vec!["PLUS", "MINUS"]) {
             let first = current_expr;
             let operator = self.previous();
             let second = self.factor()?;
-            current_expr = Expr::Binary { left: Box::new(first), operator , right: Box::new(second) };
+            current_expr = Box::new(Expr::Binary { left: first, operator , right: second });
         }
         return Ok(current_expr);
     }
 
-    fn factor(&mut self) -> Result<Expr> {
+    fn factor(&mut self) -> Result<Box<Expr>> {
         let mut current_expr = self.unary()?;
         while self.match_type(vec!["STAR", "SLASH"]) {
             let first = current_expr;
             let operator = self.previous();
             let second = self.unary()?;
-            current_expr = Expr::Binary { left: Box::new(first), operator , right: Box::new(second) };
+            current_expr = Box::new(Expr::Binary { left: first, operator , right: second });
         }
         return Ok(current_expr);
     }
 
-    fn unary(&mut self) -> Result<Expr> {
+    fn unary(&mut self) -> Result<Box<Expr>> {
         if self.match_type(vec!["BANG", "MINUS"]) {
             let operator = self.previous();
             let right = self.unary()?;
-            return Ok(Expr::Unary { operator, right: Box::new(right) })
+            return Ok(Box::new(Expr::Unary { operator, right: right }))
         }
         self.call()
     }
 
-    fn call(&mut self) -> Result<Expr> {
+    fn call(&mut self) -> Result<Box<Expr>> {
         let mut expr = self.primary()?;
 
         loop {
@@ -174,7 +174,7 @@ impl Parser {
         Ok(expr)
     }
 
-    fn finish_call(&mut self, callee: Expr) -> Result<Expr> {
+    fn finish_call(&mut self, callee: Box<Expr>) -> Result<Box<Expr>> {
         let mut arguments = vec![];
         if !self.check("RIGHT_PAREN") {
             arguments.push(self.expression()?);
@@ -186,32 +186,32 @@ impl Parser {
             }
         }
         let paren = self.consume("RIGHT_PAREN", "Expect ')' after arguments.")?;
-        Ok(Expr::Call { callee: Box::new(callee), paren, arguments })
+        Ok(Box::new(Expr::Call { callee: callee, paren, arguments }))
     }
 
-    fn primary(&mut self) -> Result<Expr> {
+    fn primary(&mut self) -> Result<Box<Expr>> {
         if self.match_type(vec!["FALSE"]) {
-            return Ok(Expr::Literal(Value::Bool(false)));
+            return Ok(Box::new(Expr::Literal(Value::Bool(false))));
         }
         if self.match_type(vec!["TRUE"]) {
-            return Ok(Expr::Literal(Value::Bool(true)));
+            return Ok(Box::new(Expr::Literal(Value::Bool(true))));
         }
         if self.match_type(vec!["NIL"]) {
-            return Ok(Expr::Literal(Value::Nil));
+            return Ok(Box::new(Expr::Literal(Value::Nil)));
         }
         if self.match_type(vec!["NUMBER"]) {
-            return Ok(Expr::Literal(Value::from_number_and_literal(self.previous().literal.parse().unwrap(), &self.previous().literal)))
+            return Ok(Box::new(Expr::Literal(Value::from_number_and_literal(self.previous().literal.parse().unwrap(), &self.previous().literal))))
         }
         if self.match_type(vec!["STRING"]) {
-            return Ok(Expr::Literal(Value::Str(self.previous().literal)))
+            return Ok(Box::new(Expr::Literal(Value::Str(self.previous().literal))))
         }
         if self.match_type(vec!["IDENTIFIER"]) {
-            return Ok(Expr::Variable(self.previous()))
+            return Ok(Box::new(Expr::Variable { name: self.previous(), distance: None }))
         }
         if self.match_type(vec!["LEFT_PAREN"]) {
             let expr = self.expression()?;
             self.consume("RIGHT_PAREN", "Expect ')' after expression.")?;
-            return Ok(Expr::Grouping { expression: Box::new(expr) })
+            return Ok(Box::new(Expr::Grouping { expression: expr }))
         }
         Err(self.error(self.peek(), "Expect expression."))
     }
@@ -328,7 +328,7 @@ impl Parser {
             body = Stmt::Block { statements: vec![body, increment_statement ] };
         }
 
-        let mut while_condition = Expr::Literal(Value::Bool(true));
+        let mut while_condition = Box::new(Expr::Literal(Value::Bool(true)));
         if let Some(condition) = condition {
             while_condition = condition;
         }
@@ -396,7 +396,7 @@ impl Parser {
         ParseError
     }
 
-    pub fn parse_expr(&mut self) -> Option<Expr> {
+    pub fn parse_expr(&mut self) -> Option<Box<Expr>> {
         match self.expression() {
             Ok(expr) => Some(expr),
             Err(_) => None

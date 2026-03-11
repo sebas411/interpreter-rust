@@ -1,7 +1,7 @@
 use crate::modules::{token::Token, value::Value};
-use std::fmt;
+use std::fmt::{self, Debug};
 
-pub trait LoxError: fmt::Display {
+pub trait LoxError: fmt::Display + Debug {
     fn get_value(&self) -> Value;
     fn error_type(&self) -> String;
 }
@@ -56,7 +56,7 @@ impl LoxError for RuntimeError {
     }
 }
 
-
+#[derive(Debug)]
 pub struct ResolverError {
     _token: Option<Token>,
     message: String,
@@ -88,6 +88,7 @@ impl ResolverError {
 }
 
 
+#[derive(Debug)]
 pub struct PrintError {}
 
 impl LoxError for PrintError {
@@ -109,6 +110,7 @@ impl fmt::Display for PrintError {
     }
 }
 
+#[derive(Debug)]
 pub struct ReturnError {
     value: Value,
 }

@@ -1,11 +1,11 @@
-use std::{collections::HashMap, rc::Rc, sync::RwLock};
+use std::{rc::Rc, sync::RwLock};
 use crate::{modules::{callable::{LoxCallable, LoxFunction}, environment::Environment, errors::{LoxError, ReturnError, RuntimeError}, expressions::Expr, statements::Stmt, token::Token, value::Value, visitor::{ExprVisitor, StmtVisitor}}, runtime_error};
 
 type Result<T> = std::result::Result<T, Box<dyn LoxError>>;
 
 pub struct Interpreter {
     environment: Rc<RwLock<Environment>>,
-    locals: HashMap<Expr, u8>,
+    globals: Rc<RwLock<Environment>>,
 }
 
 impl ExprVisitor for Interpreter {
@@ -77,15 +77,23 @@ impl ExprVisitor for Interpreter {
         Err(Box::new(RuntimeError::new(None, "Unknown runtime error")))
     }
     fn visit_variable(&mut self, expr: &Expr) -> Result<Value> {
-        if let Expr::Variable(name) = expr {
-            return self.environment.read().unwrap().get(name);
+        if let Expr::Variable {name, distance} = expr {
+            return self.lookup_variable(name, *distance);
         }
         Err(Box::new(RuntimeError::new(None, "Unknown runtime error")))
     }
-    fn visit_asign(&mut self, expr: &Expr) -> Result<Value> {
-        if let Expr::Assign { name, value } = expr {
+    fn visit_assign(&mut self, expr: &Expr) -> Result<Value> {
+        if let Expr::Assign { name, value, distance } = expr {
             let value = self.evaluate(value)?;
-            self.environment.write().unwrap().assign(name, &value)?;
+
+            match distance {
+                Some(distance) => {
+                    self.environment.write().unwrap().assign_at(*distance, name, &value)?
+                }
+                None => {
+                    self.globals.write().unwrap().assign(name, &value)?;
+                }
+            }
             return Ok(value)
         }
         Err(Box::new(RuntimeError::new(None, "Unknown runtime error")))
@@ -198,7 +206,7 @@ impl StmtVisitor for Interpreter {
 impl Interpreter {
     pub fn new() -> Self {
         let globals = Rc::new(RwLock::new(Environment::new_globals()));
-        Self { environment: globals, locals: HashMap::new() }
+        Self { environment: globals.clone(), globals }
     }
 
     fn get_callable(&self, value: &Value, paren: &Token) -> Result<Rc<dyn LoxCallable>> {
@@ -206,10 +214,6 @@ impl Interpreter {
             return Ok(function.clone())
         }
         Err(Box::new(RuntimeError::new(Some(paren.clone()), "Can only call functions and classes.")))
-    }
-
-    pub fn resolve(&mut self, expr: &Expr, depth: u8) {
-        self.locals.insert(expr.clone(), depth);
     }
 
     pub fn interpret(&mut self, statements: Vec<Stmt>) {
@@ -271,4 +275,16 @@ impl Interpreter {
     fn is_equal(&self, a: Value, b: Value) -> bool {
         a == b
     }
+
+    fn lookup_variable(&self, name: &Token, distance: Option<usize>) -> Result<Value> {
+        match distance {
+            Some(distance) => {
+                self.environment.read().unwrap().get_at(distance, &name)
+            }
+            None => {
+                self.globals.read().unwrap().get(name)
+            }
+        }
+    }
+
 }
