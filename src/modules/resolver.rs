@@ -1,15 +1,22 @@
 use std::collections::HashMap;
-use crate::modules::{errors::{LoxError, ResolverError}, expressions::Expr, statements::Stmt, token::Token};
+use crate::{error, modules::{errors::{LoxError, ResolverError}, expressions::Expr, statements::Stmt, token::Token}};
 
 type Result<T> = std::result::Result<T, Box<dyn LoxError>>;
 
+#[derive(Debug, Clone)]
+enum FunctionType {
+    NONE,
+    FUNCTION,
+}
+
 pub struct Resolver {
-    scopes: Vec<HashMap<String, bool>>
+    scopes: Vec<HashMap<String, bool>>,
+    current_function: FunctionType,
 }
 
 impl Resolver {
     pub fn new() -> Self {
-        Self { scopes: Vec::new() }
+        Self { scopes: Vec::new(), current_function: FunctionType::NONE }
     }
 
     fn begin_scope(&mut self) {
@@ -41,7 +48,7 @@ impl Resolver {
                 self.declare(name);
                 self.define(name);
     
-                self.resolve_function(stmt)?;
+                self.resolve_function(stmt, FunctionType::FUNCTION)?;
             }
             Stmt::If { condition, then_branch, else_branch } => {
                 self.resolve_expr(condition)?;
@@ -53,7 +60,11 @@ impl Resolver {
             Stmt::Print(expr) => {
                 self.resolve_expr(expr)?;
             }
-            Stmt::Return { keyword: _, value } => {
+            Stmt::Return { keyword, value } => {
+                if let FunctionType::NONE = self.current_function {
+                    error(keyword.line, "Can't return from top-level code.");
+                }
+
                 if let Some(value) = value {
                     self.resolve_expr(value)?;
                 }
@@ -73,8 +84,10 @@ impl Resolver {
         Ok(())
     }
 
-    fn resolve_function(&mut self, stmt: &mut Stmt) -> Result<()> {
+    fn resolve_function(&mut self, stmt: &mut Stmt, function_type: FunctionType) -> Result<()> {
         if let Stmt::Function { name: _, params, body } = stmt {
+            let enclosing_function = self.current_function.clone();
+            self.current_function = function_type;
             self.begin_scope();
             for param in params {
                 self.declare(param);
@@ -82,6 +95,7 @@ impl Resolver {
             }
             self.resolve_multi(body)?;
             self.end_scope();
+            self.current_function = enclosing_function;
             Ok(())
         } else {
             Err(Box::new(ResolverError::new()))
@@ -118,7 +132,7 @@ impl Resolver {
             Expr::Variable { name, distance } => {
                 if let Some(scope) = self.scopes.last() &&
                 let Some(val) = scope.get(&name.lexeme) && !val {
-                        return Err(Box::new(ResolverError::new_with_values(name.clone(), "Can't read local variable in its own initializer.")))
+                        error(name.line, "Can't read local variable in its own initializer.");
                 }
                 self.resolve_local(distance, name);
             }
@@ -139,6 +153,9 @@ impl Resolver {
 
     fn declare(&mut self, name: &Token) {
         if let Some(scope) = self.scopes.last_mut() {
+            if scope.contains_key(&name.lexeme) {
+                error(name.line, "Already a variable with this name in this scope.");
+            }
             scope.insert(name.lexeme.clone(), false);
         }
     }

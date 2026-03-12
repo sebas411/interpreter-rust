@@ -25,6 +25,10 @@ fn run(source: &str) {
         let mut interpreter = Interpreter::new();
         let mut resolver = Resolver::new();
         resolver.resolve_multi(&mut statements).unwrap();
+        // Check if there is a resolution error.
+        if has_error() {
+            return;
+        }
         interpreter.interpret(statements);
     }
 }
