@@ -224,10 +224,26 @@ impl Parser {
         if self.match_type(vec!["VAR"]) {
             return self.var_declaration()
         }
+        if self.match_type(vec!["CLASS"]) {
+            return self.class_declaration()
+        }
         if self.match_type(vec!["FUN"]) {
             return self.function("function")
         }
         self.statement()
+    }
+
+    fn class_declaration(&mut self) -> Result<Stmt> {
+        let name = self.consume("IDENTIFIER", "Expect class name.")?;
+        self.consume("LEFT_BRACE", "Expect '{' before class body.")?;
+
+        let mut methods = vec![];
+        while !self.check("RIGHT_BRACE") && !self.is_at_end() {
+            methods.push(self.function("method")?);
+        }
+
+        self.consume("RIGHT_BRACE", "Expect '}' after class body.")?;
+        Ok(Stmt::Class { name, methods })
     }
 
     fn function(&mut self, kind: &str) -> Result<Stmt> {

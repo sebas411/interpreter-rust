@@ -10,3 +10,4 @@ pub mod statements;
 pub mod environment;
 pub mod callable;
 pub mod resolver;
+pub mod class;

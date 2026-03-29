@@ -22,6 +22,7 @@ pub trait StmtVisitor {
     fn visit_while_statement(&mut self, stmt: &Stmt) -> Result<()>;
     fn visit_function_statement(&mut self, stmt: &Stmt) -> Result<()>;
     fn visit_return_statement(&mut self, stmt: &Stmt) -> Result<()>;
+    fn visit_class(&mut self, stmt: &Stmt) -> Result<()>;
 }
 
 pub struct AstPrinter;

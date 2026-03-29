@@ -33,6 +33,10 @@ pub enum Stmt {
         condition: Box<Expr>,
         body: Box<Stmt>,
     },
+    Class {
+        name: Token,
+        methods: Vec<Stmt>
+    }
 }
 
 impl Stmt {
@@ -61,6 +65,9 @@ impl Stmt {
             },
             Stmt::Return { .. } => {
                 visitor.visit_return_statement(self)
+            },
+            Stmt::Class { .. } => {
+                visitor.visit_class(self)
             },
         }
     }
