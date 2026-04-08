@@ -218,10 +218,15 @@ impl Interpreter {
     }
 
     fn get_callable(&self, value: &Value, paren: &Token) -> Result<Rc<dyn LoxCallable>> {
-        if let Value::Function(function) = value {
-            return Ok(function.clone())
+        match value {
+            Value::Function(function) => {
+                Ok(function.clone())
+            },
+            Value::Class(klass) => {
+                Ok(Rc::new(klass.clone()))
+            },
+            _ => Err(Box::new(RuntimeError::new(Some(paren.clone()), "Can only call functions and classes.")))
         }
-        Err(Box::new(RuntimeError::new(Some(paren.clone()), "Can only call functions and classes.")))
     }
 
     pub fn interpret(&mut self, statements: Vec<Stmt>) {

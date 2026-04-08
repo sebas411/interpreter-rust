@@ -1,6 +1,6 @@
 use std::{fmt, hash::{Hash, Hasher}, ops::{Add, Div, Mul, Neg, Sub}, rc::Rc};
 
-use crate::modules::{callable::LoxCallable, class::LoxClass};
+use crate::modules::{callable::LoxCallable, class::{LoxClass, LoxInstance}};
 
 macro_rules! impl_op {
     ($trait:ident, $method:ident, $fun:tt) => {
@@ -103,7 +103,8 @@ pub enum Value {
     Bool(bool),
     Nil,
     Function(Rc<dyn LoxCallable>),
-    Class(LoxClass)
+    Class(LoxClass),
+    Instance(LoxInstance),
 }
 
 impl Value {
@@ -139,6 +140,7 @@ impl fmt::Display for Value {
             Value::Nil       => write!(f, "nil"),
             Value::Function(func) => write!(f, "{}", func.to_string()),
             Value::Class(c) => write!(f, "{}", c),
+            Value::Instance(i) => write!(f, "{}", i),
         }
     }
 }
@@ -166,6 +168,7 @@ impl Hash for Value {
             Self::Num(n) => n.hash(state),
             Self::Str(s) => s.hash(state),
             Self::Class(c) => c.hash(state),
+            Self::Instance(i) => i.hash(state),
         }
     }
 }
