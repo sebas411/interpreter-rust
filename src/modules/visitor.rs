@@ -11,6 +11,8 @@ pub trait ExprVisitor {
     fn visit_assign(&mut self, expr: &Expr) -> Result<Value>;
     fn visit_logical(&mut self, expr: &Expr) -> Result<Value>;
     fn visit_call(&mut self, expr: &Expr) -> Result<Value>;
+    fn visit_get(&mut self, expr: &Expr) -> Result<Value>;
+    fn visit_set(&mut self, expr: &Expr) -> Result<Value>;
 }
 
 pub trait StmtVisitor {
@@ -72,6 +74,12 @@ impl ExprVisitor for AstPrinter {
         Err(Box::new(PrintError::new()))
     }
     fn visit_call(&mut self, _: &Expr) -> Result<Value> {
+        Err(Box::new(PrintError::new()))
+    }
+    fn visit_get(&mut self, _: &Expr) -> Result<Value> {
+        Err(Box::new(PrintError::new()))
+    }
+    fn visit_set(&mut self, _: &Expr) -> Result<Value> {
         Err(Box::new(PrintError::new()))
     }
 }

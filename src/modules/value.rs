@@ -1,4 +1,4 @@
-use std::{fmt, hash::{Hash, Hasher}, ops::{Add, Div, Mul, Neg, Sub}, rc::Rc};
+use std::{fmt, hash::{Hash, Hasher}, ops::{Add, Div, Mul, Neg, Sub}, rc::Rc, sync::RwLock};
 
 use crate::modules::{callable::LoxCallable, class::{LoxClass, LoxInstance}};
 
@@ -104,7 +104,7 @@ pub enum Value {
     Nil,
     Function(Rc<dyn LoxCallable>),
     Class(LoxClass),
-    Instance(LoxInstance),
+    Instance(Rc<RwLock<LoxInstance>>),
 }
 
 impl Value {
@@ -140,7 +140,7 @@ impl fmt::Display for Value {
             Value::Nil       => write!(f, "nil"),
             Value::Function(func) => write!(f, "{}", func.to_string()),
             Value::Class(c) => write!(f, "{}", c),
-            Value::Instance(i) => write!(f, "{}", i),
+            Value::Instance(i) => write!(f, "{}", i.read().unwrap()),
         }
     }
 }
@@ -158,17 +158,3 @@ impl PartialEq for Value {
 }
 
 impl Eq for Value {}
-
-impl Hash for Value {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        match self {
-            Self::Bool(b) => b.hash(state),
-            Self::Function(rc) => Rc::as_ptr(rc).hash(state),
-            Self::Nil => state.write_u8(0),
-            Self::Num(n) => n.hash(state),
-            Self::Str(s) => s.hash(state),
-            Self::Class(c) => c.hash(state),
-            Self::Instance(i) => i.hash(state),
-        }
-    }
-}

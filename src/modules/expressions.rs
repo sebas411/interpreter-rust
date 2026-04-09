@@ -4,7 +4,7 @@ use crate::modules::{errors::LoxError, token::Token, value::Value, visitor::Expr
 
 type Result<T> = std::result::Result<T, Box<dyn LoxError>>;
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Expr {
     Unary {
         operator: Token,
@@ -37,7 +37,16 @@ pub enum Expr {
         callee: Box<Expr>,
         paren: Token,
         arguments: Vec<Box<Expr>>,
-    }
+    },
+    Get {
+        object: Box<Expr>,
+        name: Token,
+    },
+    Set {
+        object: Box<Expr>,
+        name: Token,
+        value: Box<Expr>,
+    },
 }
 
 impl Expr {
@@ -66,6 +75,12 @@ impl Expr {
             },
             Expr::Call { .. } => {
                 visitor.visit_call(self)
+            },
+            Expr::Get { .. } => {
+                visitor.visit_get(self)
+            },
+            Expr::Set { .. } => {
+                visitor.visit_set(self)
             }
         }
     }

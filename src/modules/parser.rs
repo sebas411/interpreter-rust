@@ -78,7 +78,9 @@ impl Parser {
             let value = self.assignment()?;
 
             if let Expr::Variable { name, distance: _ } = expr.as_ref() {
-                return Ok(Box::new(Expr::Assign { name: name.clone(), value: value, distance: None }))
+                return Ok(Box::new(Expr::Assign { name: name.clone(), value, distance: None }))
+            } else if let Expr::Get { object, name } = expr.as_ref() {
+                return Ok(Box::new(Expr::Set { object: object.clone(), name: name.clone(), value }))
             }
             self.error(equals, "Invalid assignment target.");
         }
@@ -166,6 +168,9 @@ impl Parser {
         loop {
             if self.match_type(vec!["LEFT_PAREN"]) {
                 expr = self.finish_call(expr)?;
+            } else if self.match_type(vec!["DOT"]) {
+                let name = self.consume("IDENTIFIER", "Expect property name after '.'.")?;
+                expr = Box::new(Expr::Get { object: expr, name });
             } else {
                 break;
             }

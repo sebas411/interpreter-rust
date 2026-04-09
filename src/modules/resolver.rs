@@ -139,6 +139,13 @@ impl Resolver {
                         error(name.line, "Can't read local variable in its own initializer.");
                 }
                 self.resolve_local(distance, name);
+            },
+            Expr::Get { object, name: _ } => {
+                self.resolve_expr(object)?;
+            },
+            Expr::Set { object, name: _, value } => {
+                self.resolve_expr(value)?;
+                self.resolve_expr(object)?;
             }
         }
         Ok(())

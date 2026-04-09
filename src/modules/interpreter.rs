@@ -125,6 +125,30 @@ impl ExprVisitor for Interpreter {
         }
         Err(Box::new(RuntimeError::new(None, "Can only call functions and classes.")))
     }
+    fn visit_get(&mut self, expr: &Expr) -> Result<Value> {
+        if let Expr::Get { object, name } = expr {
+            let object = self.evaluate(object)?;
+            if let Value::Instance(instance) = object {
+                return instance.read().unwrap().get(name);
+            }
+            return Err(Box::new(RuntimeError::new(Some(name.clone()), "Only instances have properties.")))
+        }
+        Err(Box::new(RuntimeError::new(None, "Unknown runtime error.")))
+    }
+    fn visit_set(&mut self, expr: &Expr) -> Result<Value> {
+        if let Expr::Set { object, name, value } = expr {
+            let object = self.evaluate(object)?;
+
+            if let Value::Instance(instance) = object {
+                let value = self.evaluate(value)?;
+                instance.write().unwrap().set(&name, value.clone());
+                return Ok(value)
+            } else {
+                return Err(Box::new(RuntimeError::new(Some(name.clone()), "Only instances have fields.")))
+            }
+        }
+        Err(Box::new(RuntimeError::new(None, "Unknown runtime error.")))
+    }
 }
 
 impl StmtVisitor for Interpreter {
