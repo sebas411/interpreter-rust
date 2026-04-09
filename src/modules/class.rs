@@ -8,11 +8,12 @@ type Result<T> = std::result::Result<T, Box<dyn LoxError>>;
 pub struct LoxClass {
     name: String,
     methods: HashMap<String, LoxFunction>,
+    superclass: Box<Option<Self>>,
 }
 
 impl LoxClass {
-    pub fn new(name: &str, methods: HashMap<String, LoxFunction>) -> Self {
-        Self { name: name.to_string(), methods }
+    pub fn new(name: &str, methods: HashMap<String, LoxFunction>, superclass: Option<Self>) -> Self {
+        Self { name: name.to_string(), methods, superclass: Box::new(superclass) }
     }
     fn find_method(&self, name: &str) -> Option<LoxFunction> {
         if let Some(method) = self.methods.get(name) {

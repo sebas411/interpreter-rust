@@ -233,7 +233,20 @@ impl StmtVisitor for Interpreter {
         Ok(())
     }
     fn visit_class(&mut self, stmt: &Stmt) -> Result<()> {
-        if let Stmt::Class { name, methods } = stmt {
+        if let Stmt::Class { name, methods, superclass: stmt_superclass } = stmt {
+            let mut superclass = None;
+            if let Some(stmt_superclass) = stmt_superclass && let Expr::Variable { name: stmt_superclass_name, distance: _ } = &stmt_superclass {
+                let value = self.evaluate(stmt_superclass)?;
+                match value {
+                    Value::Class(sc) => {
+                        superclass = Some(sc);
+                    },
+                    _ => {
+                        return Err(Box::new(RuntimeError::new(Some(stmt_superclass_name.clone()), "Superclass must be a class.")));
+                    }
+                }
+            }
+
             self.environment.write().unwrap().define(&name.lexeme, &Value::Nil);
 
             let mut klass_methods = HashMap::new();
@@ -243,7 +256,7 @@ impl StmtVisitor for Interpreter {
                     klass_methods.insert(name.lexeme.clone(), function);
                 }
             }
-            let klass = LoxClass::new(&name.lexeme, klass_methods);
+            let klass = LoxClass::new(&name.lexeme, klass_methods, superclass);
             self.environment.write().unwrap().assign(name, &Value::Class(klass))?;
         }
         Ok(())
