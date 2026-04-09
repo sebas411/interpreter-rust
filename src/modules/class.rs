@@ -1,17 +1,24 @@
 use core::fmt;
 use std::{collections::HashMap, rc::Rc, sync::RwLock};
-use crate::modules::{callable::LoxCallable, errors::{LoxError, RuntimeError}, interpreter::Interpreter, token::Token, value::Value};
+use crate::modules::{callable::{LoxCallable, LoxFunction}, errors::{LoxError, RuntimeError}, interpreter::Interpreter, token::Token, value::Value};
 
 type Result<T> = std::result::Result<T, Box<dyn LoxError>>;
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone)]
 pub struct LoxClass {
     name: String,
+    methods: HashMap<String, LoxFunction>,
 }
 
 impl LoxClass {
-    pub fn new(name: &str) -> Self {
-        Self { name: name.to_string() }
+    pub fn new(name: &str, methods: HashMap<String, LoxFunction>) -> Self {
+        Self { name: name.to_string(), methods }
+    }
+    fn find_method(&self, name: &str) -> Option<LoxFunction> {
+        if let Some(method) = self.methods.get(name) {
+            return Some(method.clone());
+        }
+        None
     }
 }
 
@@ -48,6 +55,11 @@ impl LoxInstance {
         if let Some(value) = self.fields.get(&name.lexeme) {
             return Ok(value.clone())
         }
+
+        if let Some(value) = self.klass.find_method(&name.lexeme) {
+            return Ok(Value::Function(Rc::new(value)));
+        }
+
         Err(Box::new(RuntimeError::new(Some(name.clone()), &format!{"Undefined property '{}'.", name.lexeme})))
     }
     pub fn set(&mut self, name: &Token, value: Value) {

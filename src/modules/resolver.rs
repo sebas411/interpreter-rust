@@ -7,6 +7,7 @@ type Result<T> = std::result::Result<T, Box<dyn LoxError>>;
 enum FunctionType {
     NONE,
     FUNCTION,
+    METHOD,
 }
 
 pub struct Resolver {
@@ -80,9 +81,14 @@ impl Resolver {
                 self.resolve_expr(condition)?;
                 self.resolve(body)?;
             }
-            Stmt::Class { name, methods: _ } => {
+            Stmt::Class { name, methods } => {
                 self.declare(name);
                 self.define(name);
+
+                for method in methods {
+                    let declaration = FunctionType::METHOD;
+                    self.resolve_function(method, declaration)?;
+                }
             }
         }
         Ok(())

@@ -1,4 +1,4 @@
-use std::{rc::Rc, sync::RwLock};
+use std::{collections::HashMap, rc::Rc, sync::RwLock};
 use crate::{modules::{callable::{LoxCallable, LoxFunction}, class::LoxClass, environment::Environment, errors::{LoxError, ReturnError, RuntimeError}, expressions::Expr, statements::Stmt, token::Token, value::Value, visitor::{ExprVisitor, StmtVisitor}}, runtime_error};
 
 type Result<T> = std::result::Result<T, Box<dyn LoxError>>;
@@ -226,9 +226,17 @@ impl StmtVisitor for Interpreter {
         Ok(())
     }
     fn visit_class(&mut self, stmt: &Stmt) -> Result<()> {
-        if let Stmt::Class { name, methods: _ } = stmt {
+        if let Stmt::Class { name, methods } = stmt {
             self.environment.write().unwrap().define(&name.lexeme, &Value::Nil);
-            let klass = LoxClass::new(&name.lexeme);
+
+            let mut klass_methods = HashMap::new();
+            for method in methods {
+                if let Stmt::Function { name, .. } = &method {
+                    let function = LoxFunction::new(method, self.environment.clone());
+                    klass_methods.insert(name.lexeme.clone(), function);
+                }
+            }
+            let klass = LoxClass::new(&name.lexeme, klass_methods);
             self.environment.write().unwrap().assign(name, &Value::Class(klass))?;
         }
         Ok(())
