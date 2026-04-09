@@ -19,6 +19,11 @@ impl LoxClass {
         if let Some(method) = self.methods.get(name) {
             return Some(method.clone());
         }
+
+        if let Some(superclass) = self.superclass.as_ref() {
+            return superclass.find_method(name);
+        }
+
         None
     }
 }
