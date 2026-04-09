@@ -8,6 +8,7 @@ enum FunctionType {
     NONE,
     FUNCTION,
     METHOD,
+    INITIALIZER,
 }
 
 #[derive(Debug, Clone)]
@@ -74,6 +75,9 @@ impl Resolver {
                 }
 
                 if let Some(value) = value {
+                    if let FunctionType::INITIALIZER = self.current_function {
+                        error(keyword.line, "Can't return a value from an initializer.");
+                    }
                     self.resolve_expr(value)?;
                 }
             }
@@ -101,9 +105,15 @@ impl Resolver {
                 }
 
                 for method in methods {
-                    let declaration = FunctionType::METHOD;
-                    self.resolve_function(method, declaration)?;
+                    if let Stmt::Function { name: method_name, .. } = &method {
+                        let mut declaration = FunctionType::METHOD;
+                        if method_name.lexeme == "init" {
+                            declaration = FunctionType::INITIALIZER;
+                        }
+                        self.resolve_function(method, declaration)?;
+                    }
                 }
+            
 
                 self.end_scope();
                 self.current_class = enclosing_class;

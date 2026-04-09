@@ -215,7 +215,7 @@ impl StmtVisitor for Interpreter {
     }
     fn visit_function_statement(&mut self, stmt: &Stmt) -> Result<()> {
         if let Stmt::Function { name, .. } = stmt {
-            let function = LoxFunction::new(stmt, self.environment.clone());
+            let function = LoxFunction::new(stmt, self.environment.clone(), false);
             let function_value = Value::Function(Rc::new(function));
             self.environment.write().unwrap().define(&name.lexeme, &function_value);
         }
@@ -239,7 +239,7 @@ impl StmtVisitor for Interpreter {
             let mut klass_methods = HashMap::new();
             for method in methods {
                 if let Stmt::Function { name, .. } = &method {
-                    let function = LoxFunction::new(method, self.environment.clone());
+                    let function = LoxFunction::new(method, self.environment.clone(), name.lexeme == "init");
                     klass_methods.insert(name.lexeme.clone(), function);
                 }
             }

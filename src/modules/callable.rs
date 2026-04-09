@@ -17,14 +17,15 @@ pub struct LoxFunction {
     params: Vec<Token>,
     name: Token,
     closure: Rc<RwLock<Environment>>,
+    is_initializer: bool,
 }
 
 impl LoxFunction {
-    pub fn new(declaration: &Stmt, closure: Rc<RwLock<Environment>>) -> Self {
+    pub fn new(declaration: &Stmt, closure: Rc<RwLock<Environment>>, is_initializer: bool) -> Self {
         if let Stmt::Function { name, params, body } = declaration.clone() {
-            return Self { body, params, name, closure: closure }
+            return Self { body, params, name, closure, is_initializer }
         }
-        Self { body: vec![], params: vec![], name: Token { token_type: "IDENTIFIER".into(), lexeme: "".into(), literal: "".into(), line: 0 }, closure: Rc::new(RwLock::new(Environment::new())) }
+        Self { body: vec![], params: vec![], name: Token { token_type: "IDENTIFIER".into(), lexeme: "".into(), literal: "".into(), line: 0 }, closure: Rc::new(RwLock::new(Environment::new())), is_initializer }
     }
     pub fn bind(&self, instance: Rc<RwLock<LoxInstance>>) -> Self {
         let mut environment = Environment::new_with_enclosing(self.closure.clone());
@@ -54,12 +55,19 @@ impl LoxCallable for LoxFunction {
         match result {
             Err(e) => {
                 if e.error_type() == "ReturnError" {
+                    if self.is_initializer {
+                        return self.closure.read().unwrap().get_at(0, &Token::new("STRING", "this", "this", 0));
+                    }
                     return Ok(e.get_value())
                 } else {
                     return Err(e)
                 }
             },
             Ok(()) => (),
+        }
+
+        if self.is_initializer {
+            return Ok(self.closure.read().unwrap().get_at(0, &Token::new("STRING", "this", "this", 0))?);
         }
         Ok(Value::Nil)
     }

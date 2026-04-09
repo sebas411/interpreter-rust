@@ -24,11 +24,17 @@ impl LoxClass {
 
 impl LoxCallable for LoxClass {
     fn arity(&self) -> usize {
+        if let Some(initializer) = self.find_method("init") {
+            return initializer.arity()
+        }
         0
     }
-    fn call(&self, _interpreter: &mut Interpreter, _arguments: Vec<Value>) -> Result<Value> {
-        let instance = LoxInstance::new(self);
-        Ok(Value::Instance(Rc::new(RwLock::new(instance))))
+    fn call(&self, interpreter: &mut Interpreter, arguments: Vec<Value>) -> Result<Value> {
+        let instance = Rc::new(RwLock::new(LoxInstance::new(self)));
+        if let Some(initializer) = self.find_method("init") {
+            initializer.bind(instance.clone()).call(interpreter, arguments)?;
+        }
+        Ok(Value::Instance(instance))
     }
     fn to_string(&self) -> String {
         format!("{}", self)
