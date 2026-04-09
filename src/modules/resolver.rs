@@ -10,14 +10,21 @@ enum FunctionType {
     METHOD,
 }
 
+#[derive(Debug, Clone)]
+enum ClassType {
+    NONE,
+    CLASS,
+}
+
 pub struct Resolver {
     scopes: Vec<HashMap<String, bool>>,
     current_function: FunctionType,
+    current_class: ClassType,
 }
 
 impl Resolver {
     pub fn new() -> Self {
-        Self { scopes: Vec::new(), current_function: FunctionType::NONE }
+        Self { scopes: Vec::new(), current_function: FunctionType::NONE, current_class: ClassType::NONE }
     }
 
     fn begin_scope(&mut self) {
@@ -82,6 +89,9 @@ impl Resolver {
                 self.resolve(body)?;
             }
             Stmt::Class { name, methods } => {
+                let enclosing_class = self.current_class.clone();
+                self.current_class = ClassType::CLASS;
+
                 self.declare(name);
                 self.define(name);
 
@@ -96,6 +106,7 @@ impl Resolver {
                 }
 
                 self.end_scope();
+                self.current_class = enclosing_class;
             }
         }
         Ok(())
@@ -161,6 +172,10 @@ impl Resolver {
                 self.resolve_expr(object)?;
             },
             Expr::This { keyword, distance } => {
+                if let ClassType::NONE = self.current_class {
+                    error(keyword.line, "Can't use 'this' outside of a class.");
+                    return Ok(())
+                }
                 self.resolve_local(distance, keyword);
             },
         }
