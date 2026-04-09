@@ -129,7 +129,8 @@ impl ExprVisitor for Interpreter {
         if let Expr::Get { object, name } = expr {
             let object = self.evaluate(object)?;
             if let Value::Instance(instance) = object {
-                return instance.read().unwrap().get(name);
+                let instance_copy = instance.clone();
+                return instance.read().unwrap().get(name, instance_copy);
             }
             return Err(Box::new(RuntimeError::new(Some(name.clone()), "Only instances have properties.")))
         }
@@ -146,6 +147,12 @@ impl ExprVisitor for Interpreter {
             } else {
                 return Err(Box::new(RuntimeError::new(Some(name.clone()), "Only instances have fields.")))
             }
+        }
+        Err(Box::new(RuntimeError::new(None, "Unknown runtime error.")))
+    }
+    fn visit_this(&mut self, expr: &Expr) -> Result<Value> {
+        if let Expr::This { keyword, distance } = &expr {
+            return self.lookup_variable(keyword, *distance)
         }
         Err(Box::new(RuntimeError::new(None, "Unknown runtime error.")))
     }

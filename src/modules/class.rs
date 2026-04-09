@@ -51,13 +51,13 @@ impl LoxInstance {
     fn new(klass: &LoxClass) -> Self {
         Self { klass: klass.clone(), fields: HashMap::new() }
     }
-    pub fn get(&self, name: &Token) -> Result<Value> {
+    pub fn get(&self, name: &Token, self_rwlock: Rc<RwLock<Self>>) -> Result<Value> {
         if let Some(value) = self.fields.get(&name.lexeme) {
             return Ok(value.clone())
         }
 
-        if let Some(value) = self.klass.find_method(&name.lexeme) {
-            return Ok(Value::Function(Rc::new(value)));
+        if let Some(method) = self.klass.find_method(&name.lexeme) {
+            return Ok(Value::Function(Rc::new(method.bind(self_rwlock))));
         }
 
         Err(Box::new(RuntimeError::new(Some(name.clone()), &format!{"Undefined property '{}'.", name.lexeme})))

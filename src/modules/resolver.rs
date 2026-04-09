@@ -85,10 +85,17 @@ impl Resolver {
                 self.declare(name);
                 self.define(name);
 
+                self.begin_scope();
+                if let Some(scope) = self.scopes.last_mut() {
+                    scope.insert("this".to_string(), true);
+                }
+
                 for method in methods {
                     let declaration = FunctionType::METHOD;
                     self.resolve_function(method, declaration)?;
                 }
+
+                self.end_scope();
             }
         }
         Ok(())
@@ -152,7 +159,10 @@ impl Resolver {
             Expr::Set { object, name: _, value } => {
                 self.resolve_expr(value)?;
                 self.resolve_expr(object)?;
-            }
+            },
+            Expr::This { keyword, distance } => {
+                self.resolve_local(distance, keyword);
+            },
         }
         Ok(())
     }

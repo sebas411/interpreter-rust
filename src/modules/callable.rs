@@ -1,6 +1,6 @@
 use std::{fmt::Debug, rc::Rc, sync::RwLock};
 
-use crate::modules::{environment::Environment, errors::LoxError, interpreter::Interpreter, statements::Stmt, token::Token, value::Value};
+use crate::modules::{class::LoxInstance, environment::Environment, errors::LoxError, interpreter::Interpreter, statements::Stmt, token::Token, value::Value};
 use chrono::prelude::Utc;
 
 type Result<T> = std::result::Result<T, Box<dyn LoxError>>;
@@ -25,6 +25,13 @@ impl LoxFunction {
             return Self { body, params, name, closure: closure }
         }
         Self { body: vec![], params: vec![], name: Token { token_type: "IDENTIFIER".into(), lexeme: "".into(), literal: "".into(), line: 0 }, closure: Rc::new(RwLock::new(Environment::new())) }
+    }
+    pub fn bind(&self, instance: Rc<RwLock<LoxInstance>>) -> Self {
+        let mut environment = Environment::new_with_enclosing(self.closure.clone());
+        environment.define("this", &Value::Instance(instance));
+        let mut new_function = self.clone();
+        new_function.closure = Rc::new(RwLock::new(environment));
+        new_function
     }
 }
 

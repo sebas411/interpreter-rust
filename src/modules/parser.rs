@@ -210,6 +210,9 @@ impl Parser {
         if self.match_type(vec!["STRING"]) {
             return Ok(Box::new(Expr::Literal(Value::Str(self.previous().literal))))
         }
+        if self.match_type(vec!["THIS"]) {
+            return Ok(Box::new(Expr::This { keyword: self.previous(), distance: None }))
+        }
         if self.match_type(vec!["IDENTIFIER"]) {
             return Ok(Box::new(Expr::Variable { name: self.previous(), distance: None }))
         }

@@ -47,6 +47,10 @@ pub enum Expr {
         name: Token,
         value: Box<Expr>,
     },
+    This {
+        keyword: Token,
+        distance: Option<usize>,
+    },
 }
 
 impl Expr {
@@ -81,7 +85,10 @@ impl Expr {
             },
             Expr::Set { .. } => {
                 visitor.visit_set(self)
-            }
+            },
+            Expr::This { .. } => {
+                visitor.visit_this(self)
+            },
         }
     }
 }
