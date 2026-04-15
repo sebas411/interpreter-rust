@@ -104,6 +104,11 @@ impl Resolver {
                         error(superclass_name.line, "A class can't inherit from itself.");
                     }
                     self.resolve_expr(superclass)?;
+
+                    self.begin_scope();
+                    if let Some(scope) = self.scopes.last_mut() {
+                        scope.insert("super".to_string(), true);
+                    }
                 }
 
                 self.begin_scope();
@@ -123,6 +128,11 @@ impl Resolver {
             
 
                 self.end_scope();
+
+                if superclass.is_some() {
+                    self.end_scope();
+                }
+
                 self.current_class = enclosing_class;
             }
         }
@@ -195,6 +205,9 @@ impl Resolver {
                 }
                 self.resolve_local(distance, keyword);
             },
+            Expr::Super { keyword, method: _, distance } => {
+                self.resolve_local(distance, keyword);
+            }
         }
         Ok(())
     }

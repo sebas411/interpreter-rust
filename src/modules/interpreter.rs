@@ -156,6 +156,25 @@ impl ExprVisitor for Interpreter {
         }
         Err(Box::new(RuntimeError::new(None, "Unknown runtime error.")))
     }
+    fn visit_super(&mut self, expr: &Expr) -> Result<Value> {
+        if let Expr::Super { distance, method: super_method, .. } = expr {
+            let distance = distance.unwrap_or_default();
+            let superclass = self.environment.read().unwrap().get_at(distance, &Token::new("string", "super", "super", 0))?;
+            let object = self.environment.read().unwrap().get_at(distance - 1, &Token::new("string", "this", "this", 0))?;
+            if let Value::Class(superclass) = superclass && let Value::Instance(object) = object {
+                let method = superclass.find_method(&super_method.lexeme);
+                match method {
+                    Some(method) => {
+                        return Ok(Value::Function(Rc::new(method.bind(object))));
+                    }
+                    None => {
+                        return Err(Box::new(RuntimeError::new(Some(super_method.clone()), &format!("Undefined property '{}'.", super_method.lexeme))));
+                    }
+                }
+            }
+        }
+        Err(Box::new(RuntimeError::new(None, "Unknown runtime error.")))
+    }
 }
 
 impl StmtVisitor for Interpreter {
@@ -249,6 +268,11 @@ impl StmtVisitor for Interpreter {
 
             self.environment.write().unwrap().define(&name.lexeme, &Value::Nil);
 
+            if let Some(superclass) = superclass.clone() {
+                self.environment = Rc::new(RwLock::new(Environment::new_with_enclosing(self.environment.clone())));
+                self.environment.write().unwrap().define("super", &Value::Class(superclass));
+            }
+
             let mut klass_methods = HashMap::new();
             for method in methods {
                 if let Stmt::Function { name, .. } = &method {
@@ -256,7 +280,14 @@ impl StmtVisitor for Interpreter {
                     klass_methods.insert(name.lexeme.clone(), function);
                 }
             }
+            
+            if superclass.is_some() {
+                let enclosing_env = self.environment.read().unwrap().get_enclosing().unwrap();
+                self.environment = enclosing_env;
+            }
+
             let klass = LoxClass::new(&name.lexeme, klass_methods, superclass);
+            
             self.environment.write().unwrap().assign(name, &Value::Class(klass))?;
         }
         Ok(())

@@ -51,6 +51,11 @@ pub enum Expr {
         keyword: Token,
         distance: Option<usize>,
     },
+    Super {
+        keyword: Token,
+        method: Token,
+        distance: Option<usize>,
+    }
 }
 
 impl Expr {
@@ -88,6 +93,9 @@ impl Expr {
             },
             Expr::This { .. } => {
                 visitor.visit_this(self)
+            },
+            Expr::Super { .. } => {
+                visitor.visit_super(self)
             },
         }
     }

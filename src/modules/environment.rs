@@ -44,6 +44,10 @@ impl Environment {
         Err(Box::new(RuntimeError::new(Some(name.clone()), &format!("Undefined variable '{}'. Line {}", name.lexeme, name.line))))
     }
 
+    pub fn get_enclosing(&self) -> Option<Rc<RwLock<Self>>> {
+        self.enclosing.clone()
+    }
+
     pub fn contains(&self, key: &str) -> bool {
         if self.values.contains_key(key) {
             true

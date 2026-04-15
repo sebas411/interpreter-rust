@@ -15,7 +15,7 @@ impl LoxClass {
     pub fn new(name: &str, methods: HashMap<String, LoxFunction>, superclass: Option<Self>) -> Self {
         Self { name: name.to_string(), methods, superclass: Box::new(superclass) }
     }
-    fn find_method(&self, name: &str) -> Option<LoxFunction> {
+    pub fn find_method(&self, name: &str) -> Option<LoxFunction> {
         if let Some(method) = self.methods.get(name) {
             return Some(method.clone());
         }

@@ -210,6 +210,12 @@ impl Parser {
         if self.match_type(vec!["STRING"]) {
             return Ok(Box::new(Expr::Literal(Value::Str(self.previous().literal))))
         }
+        if self.match_type(vec!["SUPER"]) {
+            let keyword = self.previous();
+            self.consume("DOT", "Expect ',' after 'super'.")?;
+            let method = self.consume("IDENTIFIER", "Expect superclass method name.")?;
+            return Ok(Box::new(Expr::Super { keyword, method, distance: None }))
+        }
         if self.match_type(vec!["THIS"]) {
             return Ok(Box::new(Expr::This { keyword: self.previous(), distance: None }))
         }
