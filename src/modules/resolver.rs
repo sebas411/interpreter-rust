@@ -15,6 +15,7 @@ enum FunctionType {
 enum ClassType {
     NONE,
     CLASS,
+    SUBCLASS,
 }
 
 pub struct Resolver {
@@ -103,6 +104,7 @@ impl Resolver {
                     if superclass_name.lexeme == name.lexeme {
                         error(superclass_name.line, "A class can't inherit from itself.");
                     }
+                    self.current_class = ClassType::SUBCLASS;
                     self.resolve_expr(superclass)?;
 
                     self.begin_scope();
@@ -206,7 +208,17 @@ impl Resolver {
                 self.resolve_local(distance, keyword);
             },
             Expr::Super { keyword, method: _, distance } => {
-                self.resolve_local(distance, keyword);
+                match self.current_class {
+                    ClassType::NONE => {
+                        error(keyword.line, "Can't use 'super' outside of a class.");
+                    }
+                    ClassType::SUBCLASS => {
+                        self.resolve_local(distance, keyword);
+                    }
+                    _ => {
+                        error(keyword.line, "Can't use 'super' in a class with no superclass.");
+                    }
+                }
             }
         }
         Ok(())
